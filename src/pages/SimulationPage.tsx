@@ -281,33 +281,67 @@ export default function SimulationPage() {
       {/* Scenario — fashion shows structured brief, others show raw text */}
       {sim.mode === 'fashion' && sim.fashionConfig ? (
         <div className="card border-fuchsia-500/20 bg-fuchsia-500/5 p-4 mb-6">
-          <p className="text-xs font-semibold text-fuchsia-400 uppercase tracking-wider mb-3">
-            🧵 Fashion Brief
-          </p>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs mb-3">
-            {sim.fashionConfig.collectionType === 'licensed' && sim.fashionConfig.licensedBrand && (
-              <div><span className="text-slate-500">Licenciado:</span> <span className="text-slate-200 font-medium">{sim.fashionConfig.licensedBrand}</span></div>
-            )}
-            {sim.fashionConfig.collectionName && (
-              <div><span className="text-slate-500">Coleção:</span> <span className="text-slate-200 font-medium">{sim.fashionConfig.collectionName}</span></div>
-            )}
-            {sim.fashionConfig.retailer && (
-              <div><span className="text-slate-500">Varejista:</span> <span className="text-slate-200 font-medium">{sim.fashionConfig.retailer}</span></div>
-            )}
-            {sim.fashionConfig.season && (
-              <div><span className="text-slate-500">Estação:</span> <span className="text-slate-200 font-medium">{sim.fashionConfig.season}</span></div>
-            )}
-            {sim.fashionConfig.targetAge && (
-              <div><span className="text-slate-500">Público:</span> <span className="text-slate-200 font-medium">{sim.fashionConfig.targetAge} · {sim.fashionConfig.targetGender}</span></div>
-            )}
-            {sim.fashionConfig.priceRange && (
-              <div><span className="text-slate-500">Preço:</span> <span className="text-slate-200 font-medium">{sim.fashionConfig.priceRange}</span></div>
-            )}
-          </div>
-          {sim.fashionConfig.styleNotes && (
-            <p className="text-xs text-slate-400 leading-relaxed border-t border-fuchsia-500/10 pt-3">
-              {sim.fashionConfig.styleNotes}
-            </p>
+          {/* Discovery badge */}
+          {(sim.fashionConfig.goal === 'discover_license' || sim.fashionConfig.goal === 'discover_own') ? (
+            <>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="badge bg-orange-500/15 text-orange-400 border-orange-500/20">
+                  🔄 Modo Descoberta — {sim.fashionConfig.goal === 'discover_license' ? 'Próximo Licenciado' : 'Nova Direção'}
+                </span>
+              </div>
+              <div className="flex flex-col gap-2 text-xs mb-3">
+                {sim.fashionConfig.decliningItem && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-slate-500 flex-shrink-0">📉 Em queda:</span>
+                    <span className="text-slate-200 font-semibold">{sim.fashionConfig.decliningItem}</span>
+                  </div>
+                )}
+                {sim.fashionConfig.retailer && (
+                  <div><span className="text-slate-500">Varejista:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.retailer}</span></div>
+                )}
+                {sim.fashionConfig.targetAge && (
+                  <div><span className="text-slate-500">Público:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.targetAge} · {sim.fashionConfig.targetGender}</span></div>
+                )}
+                {sim.fashionConfig.priceRange && (
+                  <div><span className="text-slate-500">Preço:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.priceRange}</span></div>
+                )}
+              </div>
+              {sim.fashionConfig.decliningReason && (
+                <div className="border-t border-fuchsia-500/10 pt-3">
+                  <p className="text-xs text-slate-500 mb-1">Por que está caindo:</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">{sim.fashionConfig.decliningReason}</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-xs font-semibold text-fuchsia-400 uppercase tracking-wider mb-3">🧵 Fashion Brief</p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs mb-3">
+                {sim.fashionConfig.collectionType === 'licensed' && sim.fashionConfig.licensedBrand && (
+                  <div><span className="text-slate-500">Licenciado:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.licensedBrand}</span></div>
+                )}
+                {sim.fashionConfig.collectionName && (
+                  <div><span className="text-slate-500">Coleção:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.collectionName}</span></div>
+                )}
+                {sim.fashionConfig.retailer && (
+                  <div><span className="text-slate-500">Varejista:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.retailer}</span></div>
+                )}
+                {sim.fashionConfig.season && (
+                  <div><span className="text-slate-500">Estação:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.season}</span></div>
+                )}
+                {sim.fashionConfig.targetAge && (
+                  <div><span className="text-slate-500">Público:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.targetAge} · {sim.fashionConfig.targetGender}</span></div>
+                )}
+                {sim.fashionConfig.priceRange && (
+                  <div><span className="text-slate-500">Preço:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.priceRange}</span></div>
+                )}
+              </div>
+              {sim.fashionConfig.styleNotes && (
+                <p className="text-xs text-slate-400 leading-relaxed border-t border-fuchsia-500/10 pt-3">
+                  {sim.fashionConfig.styleNotes}
+                </p>
+              )}
+            </>
           )}
         </div>
       ) : (

@@ -38,16 +38,24 @@ export interface AgentMessage {
   sentiment: number
 }
 
+export type FashionGoal = 'evaluate' | 'discover_license' | 'discover_own'
+
 export interface FashionConfig {
+  goal: FashionGoal
+  // Evaluate mode
   collectionName: string
-  retailer: string
-  targetAge: string
-  targetGender: string
-  season: string
-  priceRange: string
   collectionType: 'own' | 'licensed'
   licensedBrand?: string
   styleNotes: string
+  // Discovery mode
+  decliningItem?: string      // "Sonic", "Coleção floral verão 25"
+  decliningReason?: string    // optional context on why it's declining
+  // Shared
+  retailer: string
+  targetAge: string           // free text
+  targetGender: string
+  season: string
+  priceRange: string
 }
 
 export interface SimulationConfig {
