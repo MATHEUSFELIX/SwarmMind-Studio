@@ -38,26 +38,64 @@ export interface AgentMessage {
   sentiment: number
 }
 
+// ─── Fashion ──────────────────────────────────────────────────────────────────
 export type FashionGoal = 'evaluate' | 'discover_license' | 'discover_own'
 
 export interface FashionConfig {
   goal: FashionGoal
-  // Evaluate mode
   collectionName: string
   collectionType: 'own' | 'licensed'
   licensedBrand?: string
   styleNotes: string
-  // Discovery mode
-  decliningItem?: string      // "Sonic", "Coleção floral verão 25"
-  decliningReason?: string    // optional context on why it's declining
-  // Shared
+  decliningItem?: string
+  decliningReason?: string
   retailer: string
-  targetAge: string           // free text
+  targetAge: string
   targetGender: string
   season: string
   priceRange: string
 }
 
+// ─── Consulting ───────────────────────────────────────────────────────────────
+export type ConsultingGoal = 'debate' | 'decide'
+
+export interface ConsultingConfig {
+  goal: ConsultingGoal
+  company: string
+  industry: string
+  problem: string
+  constraints: string
+  optionA?: string
+  optionB?: string
+  optionC?: string
+}
+
+// ─── Social ───────────────────────────────────────────────────────────────────
+export type SocialGoal = 'launch' | 'crisis'
+export type CampaignObjective = 'awareness' | 'engagement' | 'conversion'
+
+export interface SocialConfig {
+  goal: SocialGoal
+  content: string
+  platform: string
+  targetDemo: string
+  campaignObjective: CampaignObjective
+}
+
+// ─── Research ─────────────────────────────────────────────────────────────────
+export type ResearchGoal = 'synthesize' | 'validate'
+export type ResearchAudience = 'academic' | 'executive' | 'public'
+
+export interface ResearchConfig {
+  goal: ResearchGoal
+  question: string
+  domain: string
+  audience: ResearchAudience
+  hypothesis?: string
+  dataContext: string
+}
+
+// ─── Simulation ───────────────────────────────────────────────────────────────
 export interface SimulationConfig {
   id: string
   name: string
@@ -66,6 +104,9 @@ export interface SimulationConfig {
   agents: AgentPersona[]
   platform?: string
   fashionConfig?: FashionConfig
+  consultingConfig?: ConsultingConfig
+  socialConfig?: SocialConfig
+  researchConfig?: ResearchConfig
 }
 
 export interface SimulationMetrics {
@@ -75,12 +116,24 @@ export interface SimulationMetrics {
   neutralCount: number
   negativeCount: number
   keyInsights: string[]
-  // Fashion-specific (optional)
+  // Fashion-specific
   trendScore?: number
   sellThroughPrediction?: number
   licensingFitScore?: number
   viralityPotential?: 'Low' | 'Medium' | 'High'
   sustainabilityRisk?: 'Low' | 'Medium' | 'High'
+  // Consulting-specific
+  riskLevel?: 'Low' | 'Medium' | 'High'
+  implementationComplexity?: 'Low' | 'Medium' | 'High'
+  decisionScore?: number
+  // Social-specific
+  viralityScore?: number
+  controversyIndex?: number
+  platformFit?: 'Low' | 'Medium' | 'High'
+  // Research-specific
+  evidenceStrength?: number
+  practicalApplicability?: 'Low' | 'Medium' | 'High'
+  researchGapScore?: number
 }
 
 export interface Simulation extends SimulationConfig {
