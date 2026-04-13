@@ -4,13 +4,14 @@ import {
   Brain, Users, BookOpen, Shirt, ChevronRight,
   TrendingDown, Search, Star, Scale, Megaphone,
   AlertCircle, FlaskConical, Lightbulb, LayoutTemplate,
-  X, Plus, GitCompare, Repeat,
+  X, Plus, Minus, GitCompare, Repeat, Sparkles, Loader2,
 } from 'lucide-react'
 import { useSimulationStore } from '@/stores/simulationStore'
 import { useLLMStore } from '@/stores/llmStore'
-import { LLM_PROVIDERS as PROVIDERS } from '@/config/llm'
+import { LLM_PROVIDERS as PROVIDERS, getProvider } from '@/config/llm'
 import { PERSONAS_BY_MODE, ADVOCATUS_DIABOLI } from '@/data/personas'
 import { TEMPLATES_BY_MODE } from '@/data/templates'
+import { generateAgentPersonas } from '@/services/llm'
 import type {
   SimulationMode, AgentPersona, LLMProvider,
   FashionConfig, FashionGoal,
@@ -269,6 +270,8 @@ export default function NewSimulationPage() {
   const [comparisonProvider, setComparisonProvider] = useState<LLMProvider | null>(null)
   const [showCustomBuilder, setShowCustomBuilder]   = useState(false)
   const [showTemplates, setShowTemplates]           = useState(false)
+  const [generatingAgents, setGeneratingAgents]     = useState(false)
+  const [generateError, setGenerateError]           = useState<string | null>(null)
 
   useEffect(() => {
     setSelectedAgentIds(new Set(PERSONAS_BY_MODE[mode].map((p) => p.id)))
@@ -288,6 +291,33 @@ export default function NewSimulationPage() {
   function addCustomAgent(agent: AgentPersona) {
     setCustomAgents((prev) => [...prev, agent])
     setSelectedAgentIds((prev) => new Set([...prev, agent.id]))
+  }
+
+  async function handleGenerateAgents() {
+    setGeneratingAgents(true)
+    setGenerateError(null)
+    try {
+      const scenario = buildScenario()
+      const provider = getProvider(selectedProvider)
+      const generated = await generateAgentPersonas(provider, scenario, mode, 3)
+      const COLORS = ['text-indigo-600', 'text-teal-600', 'text-orange-600']
+      const BGS    = ['bg-indigo-500/10 border-indigo-500/20', 'bg-teal-500/10 border-teal-500/20', 'bg-orange-500/10 border-orange-500/20']
+      generated.forEach((g, i) => {
+        addCustomAgent({
+          id: `ai_${Date.now()}_${i}`,
+          name: g.name, role: g.role, emoji: g.emoji,
+          description: g.role,
+          systemPrompt: g.systemPrompt,
+          color: COLORS[i % COLORS.length],
+          bgColor: BGS[i % BGS.length],
+          sentimentBias: 0,
+        })
+      })
+    } catch (e) {
+      setGenerateError(e instanceof Error ? e.message : 'Failed to generate agents')
+    } finally {
+      setGeneratingAgents(false)
+    }
   }
 
   function applyTemplate(templateId: string) {
@@ -589,20 +619,25 @@ export default function NewSimulationPage() {
         {/* Debate rounds */}
         <div>
           <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Debate Rounds</label>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { v: 1, label: '1 Round', sub: 'Opening positions' },
-              { v: 2, label: '2 Rounds', sub: '+ Cross-examination' },
-              { v: 3, label: '3 Rounds', sub: '+ Final verdicts & scores' },
-            ].map(({ v, label, sub }) => (
-              <button key={v} onClick={() => setRounds(v)}
-                className={`p-3 rounded-xl border text-left transition-all ${rounds === v ? 'bg-brand-50 border-brand-300' : 'bg-white border-gray-200 hover:border-gray-300'}`}
-              >
-                <p className={`text-sm font-semibold ${rounds === v ? 'text-brand-700' : 'text-gray-500'}`}>{label}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
-              </button>
-            ))}
+          <div className="flex items-center gap-3">
+            <button onClick={() => setRounds(Math.max(1, rounds - 1))}
+              className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:border-gray-300 hover:bg-gray-50 transition-all"
+            ><Minus size={14} className="text-gray-500" /></button>
+            <div className={`flex-1 p-3 rounded-xl border text-center ${rounds > 1 ? 'bg-brand-50 border-brand-300' : 'bg-white border-gray-200'}`}>
+              <span className={`text-2xl font-bold ${rounds > 1 ? 'text-brand-700' : 'text-gray-600'}`}>{rounds}</span>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {rounds === 1 ? 'Opening positions only' : rounds === 2 ? 'Opening + Cross-examination' : rounds === 3 ? 'Opening + Cross-exam + Final verdicts & scores' : `${rounds - 2} cross-exam round${rounds - 2 > 1 ? 's' : ''} + scored finale`}
+              </p>
+            </div>
+            <button onClick={() => setRounds(rounds + 1)}
+              className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:border-gray-300 hover:bg-gray-50 transition-all"
+            ><Plus size={14} className="text-gray-500" /></button>
           </div>
+          {rounds > 4 && (
+            <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+              ⚠ More than 4 rounds — LLMs tend to repeat themselves. Use sparingly.
+            </p>
+          )}
         </div>
 
         {/* Advocatus Diaboli */}
@@ -643,7 +678,7 @@ export default function NewSimulationPage() {
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Agents</label>
-            <span className="text-xs text-gray-400">{selectedAgentIds.size + (enableAdvocatus ? 1 : 0)} selected</span>
+            <span className="text-xs font-semibold text-gray-600">{selectedAgentIds.size + (enableAdvocatus ? 1 : 0)} active</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {allModeAgents.map((persona) => (
@@ -654,16 +689,28 @@ export default function NewSimulationPage() {
             )}
           </div>
 
-          {/* Custom agent */}
-          {!showCustomBuilder ? (
-            <button onClick={() => setShowCustomBuilder(true)} className="mt-2 flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors">
-              <Plus size={13} />Add custom agent
+          {/* AI generate + custom agent */}
+          <div className="mt-3 flex flex-col gap-2">
+            <button
+              onClick={handleGenerateAgents}
+              disabled={generatingAgents || !isValid}
+              className="flex items-center gap-1.5 text-xs font-medium text-indigo-500 hover:text-indigo-700 disabled:opacity-40 transition-colors"
+            >
+              {generatingAgents
+                ? <><Loader2 size={13} className="animate-spin" />Generating 3 agents with AI…</>
+                : <><Sparkles size={13} />Generate 3 contextual agents with AI</>
+              }
             </button>
-          ) : (
-            <div className="mt-3">
+            {generateError && <p className="text-xs text-red-500">{generateError}</p>}
+
+            {!showCustomBuilder ? (
+              <button onClick={() => setShowCustomBuilder(true)} className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors">
+                <Plus size={13} />Add custom agent manually
+              </button>
+            ) : (
               <CustomAgentBuilder onAdd={addCustomAgent} onClose={() => setShowCustomBuilder(false)} />
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* CTA */}

@@ -31,6 +31,12 @@ export interface AgentScore {
   keyPoint: string
 }
 
+export interface AgentRelation {
+  type: 'AGREE' | 'CHALLENGE' | 'NEUTRAL' | 'BUILDS_ON'
+  targetAgentId: string
+  targetAgentName: string
+}
+
 export interface AgentMessage {
   agentId: string
   agentName: string
@@ -44,6 +50,7 @@ export interface AgentMessage {
   sentiment: number
   round: number           // which debate round this belongs to
   score?: AgentScore      // extracted from final-round structured output
+  relations?: AgentRelation[]  // declared agent relationships (round 2+)
 }
 
 // ─── Fashion ──────────────────────────────────────────────────────────────────
@@ -111,7 +118,7 @@ export interface SimulationConfig {
   scenario: string
   agents: AgentPersona[]
   platform?: string
-  rounds: number                    // 1 | 2 | 3
+  rounds: number                    // any positive integer
   enableAdvocatus: boolean
   comparisonProvider?: LLMProvider  // if set, a mirror sim runs with this provider
   fashionConfig?: FashionConfig

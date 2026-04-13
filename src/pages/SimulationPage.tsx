@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   Play, ArrowLeft, Loader2, CheckCircle, AlertTriangle, RefreshCw,
-  BarChart2, GitFork, Download, Copy, PlusCircle, GitCompare, Check,
+  BarChart2, GitFork, Download, Copy, PlusCircle, GitCompare, Check, Network,
 } from 'lucide-react'
 import { useSimulationStore } from '@/stores/simulationStore'
 import { useLLMStore } from '@/stores/llmStore'
@@ -10,13 +10,14 @@ import { getProvider } from '@/config/llm'
 import {
   streamChat,
   buildOpeningMessages, buildCrossExamMessages, buildFinalVerdictMessages, buildAgentMessages,
-  parseScore,
+  parseScore, parseRelations,
 } from '@/services/llm'
 import AgentBubble from '@/components/AgentBubble'
+import AgentGraph from '@/components/AgentGraph'
 import SentimentChart from '@/components/SentimentChart'
 import MetricCard from '@/components/MetricCard'
 import { copyReport, downloadReport } from '@/utils/export'
-import type { AgentMessage } from '@/types'
+import type { AgentMessage, AgentRelation } from '@/types'
 
 function estimateSentiment(text: string, bias: number): number {
   const pos = (text.match(/\b(opportunity|growth|strong|excellent|promising|innovative|effective|success|advantage|positive|benefit|gain|improve|expand|recommend|support|agree|clear|viable|confidence|valid|evidence)\b/gi) || []).length
@@ -25,7 +26,11 @@ function estimateSentiment(text: string, bias: number): number {
   return Math.max(-1, Math.min(1, score * 0.6 + bias * 0.4))
 }
 
-const ROUND_LABELS: Record<number, string> = { 1: 'Opening Positions', 2: 'Cross-Examination', 3: 'Final Verdicts' }
+function getRoundLabel(round: number, total: number): string {
+  if (round === 1) return 'Opening Positions'
+  if (round === total) return 'Final Verdicts'
+  return `Discussion — Round ${round}`
+}
 
 export default function SimulationPage() {
   const { id } = useParams<{ id: string }>()
@@ -38,7 +43,7 @@ export default function SimulationPage() {
 
   const sim = id ? getSimulation(id) : undefined
   const [error, setError]           = useState<string | null>(null)
-  const [tab, setTab]               = useState<'debate' | 'metrics'>('debate')
+  const [tab, setTab]               = useState<'debate' | 'metrics' | 'graph'>('debate')
   const [injectText, setInjectText] = useState('')
   const [showInject, setShowInject] = useState(false)
   const [copied, setCopied]         = useState(false)
@@ -74,12 +79,17 @@ export default function SimulationPage() {
     const provider = getProvider(selectedProvider)
     const totalRounds = sim.rounds ?? 1
 
+    // Build agent lookup map for relation parsing
+    const agentMap = Object.fromEntries(sim.agents.map((a) => [a.id, a.name]))
+
+    // Position summaries: agentId → short summary of their previous-round stance
+    const positionSummaries = new Map<string, string>()
+
     try {
       for (let round = 1; round <= totalRounds; round++) {
         setRound(sim.id, round)
 
         const previous: { agentName: string; content: string; round: number }[] = []
-        // Get all messages from previous rounds
         const existingMsgs = useSimulationStore.getState().getSimulation(sim.id)?.messages ?? []
         const prevRoundMsgs = existingMsgs.filter((m) => m.round < round)
         prevRoundMsgs.forEach((m) => previous.push({ agentName: m.agentName, content: m.content, round: m.round }))
@@ -88,6 +98,9 @@ export default function SimulationPage() {
         const injectedContexts = useSimulationStore.getState().getSimulation(sim.id)?.injectedContexts ?? []
 
         for (const agent of sim.agents) {
+          const otherAgents = sim.agents.filter((a) => a.id !== agent.id).map((a) => ({ id: a.id, name: a.name }))
+          const myPosSummary = positionSummaries.get(agent.id)
+
           const placeholder: AgentMessage = {
             agentId: agent.id, agentName: agent.name, agentRole: agent.role,
             agentColor: agent.color, agentBgColor: agent.bgColor, agentEmoji: agent.emoji,
@@ -97,15 +110,17 @@ export default function SimulationPage() {
           addMessage(sim.id, placeholder)
 
           let messages
+          const isFinalRound = round === totalRounds
+
           if (totalRounds === 1) {
             messages = buildAgentMessages(agent.systemPrompt, sim.scenario, roundPrevious, injectedContexts)
           } else if (round === 1) {
             messages = buildOpeningMessages(agent.systemPrompt, sim.scenario, roundPrevious, injectedContexts)
-          } else if (round === 2) {
-            const r1 = previous.filter((m) => m.round === 1)
-            messages = buildCrossExamMessages(agent.systemPrompt, sim.scenario, r1, roundPrevious, injectedContexts)
+          } else if (isFinalRound) {
+            messages = buildFinalVerdictMessages(agent.systemPrompt, sim.scenario, previous, injectedContexts, myPosSummary, otherAgents)
           } else {
-            messages = buildFinalVerdictMessages(agent.systemPrompt, sim.scenario, previous, injectedContexts)
+            const r1 = previous.filter((m) => m.round === 1)
+            messages = buildCrossExamMessages(agent.systemPrompt, sim.scenario, r1, roundPrevious, injectedContexts, myPosSummary, otherAgents)
           }
 
           let fullContent = ''
@@ -114,23 +129,26 @@ export default function SimulationPage() {
             appendToLastMessage(sim.id, agent.id, chunk)
           }
 
-          // Parse structured score (round 3 or single-round final)
-          const isFinalRound = round === totalRounds
-          const { clean, score } = isFinalRound ? parseScore(fullContent) : { clean: fullContent, score: undefined }
+          // Parse score (final round) → relations (round 2+) → clean content
+          const { clean: afterScore, score } = isFinalRound ? parseScore(fullContent) : { clean: fullContent, score: undefined }
+          const { clean, relations } = round > 1 ? parseRelations(afterScore, agentMap) : { clean: afterScore, relations: [] as AgentRelation[] }
 
           const sentiment = estimateSentiment(clean, agent.sentimentBias)
           finalizeMessage(sim.id, agent.id)
           roundPrevious.push({ agentName: agent.name, content: clean })
           previous.push({ agentName: agent.name, content: clean, round })
 
-          // Update the message with clean content + score + sentiment
+          // Store position summary for next round coherence
+          positionSummaries.set(agent.id, clean.replace(/\n+/g, ' ').trim().slice(0, 280))
+
+          // Update message with clean content + score + relations + sentiment
           useSimulationStore.setState((s) => ({
             simulations: s.simulations.map((sm) =>
               sm.id !== sim.id ? sm : {
                 ...sm,
                 messages: sm.messages.map((m) =>
                   m.agentId === agent.id && m.round === round
-                    ? { ...m, sentiment, content: clean, score: score ?? m.score }
+                    ? { ...m, sentiment, content: clean, score: score ?? m.score, relations: relations.length ? relations : m.relations }
                     : m,
                 ),
               },
@@ -542,6 +560,9 @@ export default function SimulationPage() {
           <button onClick={() => setTab('metrics')}
             className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-1 ${tab === 'metrics' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-700'}`}
           ><BarChart2 size={12} />Metrics</button>
+          <button onClick={() => setTab('graph')}
+            className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-1 ${tab === 'graph' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-700'}`}
+          ><Network size={12} />Graph</button>
         </div>
       )}
 
@@ -562,7 +583,7 @@ export default function SimulationPage() {
                 <div className="flex items-center gap-3 mb-3 mt-2">
                   <div className="flex-1 h-px bg-gray-100" />
                   <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2">
-                    Round {round} — {ROUND_LABELS[round] ?? 'Discussion'}
+                    Round {round} — {getRoundLabel(round, sim.rounds)}
                   </span>
                   <div className="flex-1 h-px bg-gray-100" />
                 </div>
@@ -669,6 +690,84 @@ export default function SimulationPage() {
           <p className="text-gray-500 font-medium">Metrics available after completion</p>
         </div>
       )}
+
+      {/* Graph Tab */}
+      {tab === 'graph' && (() => {
+        const messagesWithRelations = sim.messages.filter((m) => m.relations && m.relations.length > 0)
+
+        if (messagesWithRelations.length === 0) {
+          return (
+            <div className="card p-12 flex flex-col items-center justify-center text-center">
+              <Network size={28} className="text-gray-300 mb-3" />
+              <p className="text-gray-500 font-medium">No relation data yet</p>
+              <p className="text-gray-400 text-sm mt-1">
+                Agents declare relationships in Round 2+. Run a multi-round simulation to see the graph.
+              </p>
+            </div>
+          )
+        }
+
+        const graphAgents = sim.agents.map((a) => ({
+          id: a.id, name: a.name, emoji: a.emoji, color: a.color,
+        }))
+
+        const graphEdges = messagesWithRelations.flatMap((m) =>
+          (m.relations ?? []).map((rel) => ({
+            sourceId: m.agentId,
+            targetId: rel.targetAgentId,
+            type: rel.type,
+            round: m.round,
+          }))
+        )
+
+        // Per-round breakdown
+        const rounds = [...new Set(messagesWithRelations.map((m) => m.round))].sort()
+
+        return (
+          <div className="flex flex-col gap-4">
+            <div className="card p-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Argument Relationship Graph</p>
+              <AgentGraph agents={graphAgents} edges={graphEdges} />
+            </div>
+
+            <div className="card p-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Declared Relations by Round</p>
+              <div className="flex flex-col gap-3">
+                {rounds.map((round) => {
+                  const roundMsgs = messagesWithRelations.filter((m) => m.round === round)
+                  return (
+                    <div key={round}>
+                      <p className="text-xs font-semibold text-gray-500 mb-2">Round {round} — {getRoundLabel(round, sim.rounds)}</p>
+                      <div className="flex flex-col gap-1.5">
+                        {roundMsgs.flatMap((m) =>
+                          (m.relations ?? []).map((rel, ri) => {
+                            const REL_CLS = {
+                              AGREE:     'bg-green-50 text-green-700 border-green-200',
+                              CHALLENGE: 'bg-red-50 text-red-700 border-red-200',
+                              NEUTRAL:   'bg-slate-50 text-slate-600 border-slate-200',
+                              BUILDS_ON: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                            }
+                            return (
+                              <div key={`${m.agentId}-${ri}`} className="flex items-center gap-2 text-xs">
+                                <span>{m.agentEmoji}</span>
+                                <span className="font-medium text-gray-700">{m.agentName.replace('The ', '')}</span>
+                                <span className={`px-2 py-0.5 rounded-full border text-xs font-semibold ${REL_CLS[rel.type]}`}>
+                                  {rel.type.toLowerCase().replace('_', ' ')}
+                                </span>
+                                <span className="text-gray-500">{rel.targetAgentName}</span>
+                              </div>
+                            )
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
