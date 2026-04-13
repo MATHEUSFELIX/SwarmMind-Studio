@@ -3,6 +3,7 @@ import AppShell from '@/components/layout/AppShell'
 import HomePage from '@/pages/HomePage'
 import NewSimulationPage from '@/pages/NewSimulationPage'
 import SimulationPage from '@/pages/SimulationPage'
+import ComparePage from '@/pages/ComparePage'
 import NotFound from '@/pages/NotFound'
 
 export default function App() {
@@ -12,6 +13,7 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/new" element={<NewSimulationPage />} />
         <Route path="/simulation/:id" element={<SimulationPage />} />
+        <Route path="/compare/:id1/:id2" element={<ComparePage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppShell>

@@ -3,12 +3,16 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Brain, Users, BookOpen, Shirt, ChevronRight,
   TrendingDown, Search, Star, Scale, Megaphone,
-  AlertCircle, FlaskConical, Lightbulb,
+  AlertCircle, FlaskConical, Lightbulb, LayoutTemplate,
+  X, Plus, GitCompare, Repeat,
 } from 'lucide-react'
 import { useSimulationStore } from '@/stores/simulationStore'
-import { PERSONAS_BY_MODE } from '@/data/personas'
+import { useLLMStore } from '@/stores/llmStore'
+import { LLM_PROVIDERS as PROVIDERS } from '@/config/llm'
+import { PERSONAS_BY_MODE, ADVOCATUS_DIABOLI } from '@/data/personas'
+import { TEMPLATES_BY_MODE } from '@/data/templates'
 import type {
-  SimulationMode, AgentPersona,
+  SimulationMode, AgentPersona, LLMProvider,
   FashionConfig, FashionGoal,
   ConsultingConfig, ConsultingGoal,
   SocialConfig, SocialGoal, CampaignObjective,
@@ -16,98 +20,57 @@ import type {
 } from '@/types'
 
 // ─── Mode definitions ─────────────────────────────────────────────────────────
-const MODES: {
-  id: SimulationMode
-  label: string
-  desc: string
-  icon: typeof Brain
-  color: string
-  bg: string
-}[] = [
-  { id: 'consulting', label: 'Consulting', desc: 'Strategic analysis with business personas', icon: Brain, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' },
-  { id: 'social', label: 'Social', desc: 'Public opinion & sentiment simulation', icon: Users, color: 'text-pink-600', bg: 'bg-pink-50 border-pink-200' },
-  { id: 'research', label: 'Research', desc: 'Insight synthesis & pattern analysis', icon: BookOpen, color: 'text-purple-600', bg: 'bg-purple-50 border-purple-200' },
-  { id: 'fashion', label: 'Fashion', desc: 'Collection & licensing retail intelligence', icon: Shirt, color: 'text-fuchsia-600', bg: 'bg-fuchsia-50 border-fuchsia-200' },
-]
+const MODES: { id: SimulationMode; label: string; desc: string; icon: typeof Brain; color: string; bg: string }[] = [
+  { id: 'consulting', label: 'Consulting', desc: 'Strategic analysis with business personas', icon: Brain,    color: 'text-blue-600',    bg: 'bg-blue-50 border-blue-200'    },
+  { id: 'social',     label: 'Social',     desc: 'Public opinion & sentiment simulation',    icon: Users,    color: 'text-pink-600',    bg: 'bg-pink-50 border-pink-200'    },
+  { id: 'research',   title: 'Research', label: 'Research',   desc: 'Insight synthesis & pattern analysis',   icon: BookOpen, color: 'text-purple-600',  bg: 'bg-purple-50 border-purple-200'  },
+  { id: 'fashion',    label: 'Fashion',    desc: 'Collection & licensing retail intelligence', icon: Shirt,   color: 'text-fuchsia-600', bg: 'bg-fuchsia-50 border-fuchsia-200' },
+] as { id: SimulationMode; label: string; desc: string; icon: typeof Brain; color: string; bg: string }[]
 
-// ─── Fashion constants ────────────────────────────────────────────────────────
-const RETAILERS = ['Renner', 'Riachuelo', 'C&A', 'Marisa', 'Hering', 'Arezzo', 'Zara Brasil', 'Outra']
+// ─── Constants ────────────────────────────────────────────────────────────────
+const RETAILERS    = ['Renner', 'Riachuelo', 'C&A', 'Marisa', 'Hering', 'Arezzo', 'Zara Brasil', 'Outra']
 const TARGET_GENDERS = ['Feminino', 'Masculino', 'Unissex', 'Infantil']
-const SEASONS = ['Verão 2026', 'Inverno 2026', 'Verão 2027', 'Inverno 2027', 'Cápsula / Atemporal']
+const SEASONS      = ['Verão 2026', 'Inverno 2026', 'Verão 2027', 'Inverno 2027', 'Cápsula / Atemporal']
 const PRICE_RANGES = ['Popular (< R$80)', 'Acessível (R$80–150)', 'Médio (R$150–300)', 'Médio-alto (R$300+)']
-const FASHION_GOALS: { id: FashionGoal; icon: typeof Star; label: string; desc: string }[] = [
-  { id: 'evaluate', icon: Star, label: 'Avaliar nova coleção', desc: 'Analise uma coleção ou licenciado antes de lançar' },
-  { id: 'discover_license', icon: Search, label: 'Descobrir próximo licenciado', desc: 'Meu licenciado atual está perdendo força — qual escolher?' },
-  { id: 'discover_own', icon: TrendingDown, label: 'Renovar coleção própria', desc: 'Minha linha está caindo — que direção tomar?' },
-]
-
-// ─── Consulting constants ─────────────────────────────────────────────────────
-const INDUSTRIES = ['Varejo', 'Tecnologia', 'Saúde', 'Finanças', 'Educação', 'Manufatura', 'E-commerce', 'Outro']
-const CONSULTING_GOALS: { id: ConsultingGoal; icon: typeof Scale; label: string; desc: string }[] = [
-  { id: 'debate', icon: Brain, label: 'Análise estratégica', desc: 'Debata um problema, oportunidade ou decisão complexa' },
-  { id: 'decide', icon: Scale, label: 'Decisão travada', desc: 'Tenho opções definidas e preciso escolher — ajude-me a decidir' },
-]
-
-// ─── Social constants ─────────────────────────────────────────────────────────
+const INDUSTRIES   = ['Varejo', 'Tecnologia', 'Saúde', 'Finanças', 'Educação', 'Manufatura', 'E-commerce', 'Outro']
 const SOCIAL_PLATFORMS = ['Twitter/X', 'Reddit', 'LinkedIn', 'TikTok', 'Facebook', 'Instagram']
-const SOCIAL_GOALS: { id: SocialGoal; icon: typeof Megaphone; label: string; desc: string }[] = [
-  { id: 'launch', icon: Megaphone, label: 'Lançamento / Campanha', desc: 'Como o público vai reagir ao que vou anunciar?' },
-  { id: 'crisis', icon: AlertCircle, label: 'Gestão de Crise', desc: 'Minha marca está em crise — simule a reação e estratégia' },
+const RESEARCH_DOMAINS = ['Marketing', 'Comportamento do consumidor', 'Tecnologia', 'Saúde', 'Educação', 'Finanças', 'RH', 'Outro']
+
+const FASHION_GOALS:    { id: FashionGoal;    icon: typeof Star;       label: string; desc: string }[] = [
+  { id: 'evaluate',        icon: Star,        label: 'Avaliar nova coleção',      desc: 'Analise uma coleção ou licenciado antes de lançar' },
+  { id: 'discover_license',icon: Search,      label: 'Descobrir próximo licenciado', desc: 'Meu licenciado atual está perdendo força — qual escolher?' },
+  { id: 'discover_own',    icon: TrendingDown,label: 'Renovar coleção própria',   desc: 'Minha linha está caindo — que direção tomar?' },
+]
+const CONSULTING_GOALS: { id: ConsultingGoal; icon: typeof Brain;      label: string; desc: string }[] = [
+  { id: 'debate', icon: Brain, label: 'Análise estratégica', desc: 'Debata um problema, oportunidade ou decisão complexa' },
+  { id: 'decide', icon: Scale, label: 'Decisão travada',     desc: 'Tenho opções definidas e preciso escolher — ajude-me a decidir' },
+]
+const SOCIAL_GOALS:     { id: SocialGoal;     icon: typeof Megaphone;  label: string; desc: string }[] = [
+  { id: 'launch', icon: Megaphone,   label: 'Lançamento / Campanha', desc: 'Como o público vai reagir ao que vou anunciar?' },
+  { id: 'crisis', icon: AlertCircle, label: 'Gestão de Crise',       desc: 'Minha marca está em crise — simule a reação e estratégia' },
+]
+const RESEARCH_GOALS:   { id: ResearchGoal;   icon: typeof FlaskConical; label: string; desc: string }[] = [
+  { id: 'synthesize', icon: FlaskConical, label: 'Síntese de dados / pesquisa', desc: 'Tenho dados ou feedbacks — extraia insights e padrões' },
+  { id: 'validate',   icon: Lightbulb,    label: 'Validar hipótese',            desc: 'Acredito que X é verdade — desafie e avalie minha hipótese' },
+]
+const RESEARCH_AUDIENCES: { id: ResearchAudience; label: string }[] = [
+  { id: 'academic',  label: 'Acadêmica' },
+  { id: 'executive', label: 'Executiva' },
+  { id: 'public',    label: 'Geral / Público' },
 ]
 const CAMPAIGN_OBJECTIVES: { id: CampaignObjective; label: string }[] = [
-  { id: 'awareness', label: 'Awareness' },
+  { id: 'awareness',  label: 'Awareness' },
   { id: 'engagement', label: 'Engajamento' },
   { id: 'conversion', label: 'Conversão' },
 ]
 
-// ─── Research constants ───────────────────────────────────────────────────────
-const RESEARCH_DOMAINS = ['Marketing', 'Comportamento do consumidor', 'Tecnologia', 'Saúde', 'Educação', 'Finanças', 'RH', 'Outro']
-const RESEARCH_GOALS: { id: ResearchGoal; icon: typeof FlaskConical; label: string; desc: string }[] = [
-  { id: 'synthesize', icon: FlaskConical, label: 'Síntese de dados / pesquisa', desc: 'Tenho dados ou feedbacks — extraia insights e padrões' },
-  { id: 'validate', icon: Lightbulb, label: 'Validar hipótese', desc: 'Acredito que X é verdade — desafie e avalie minha hipótese' },
-]
-const RESEARCH_AUDIENCES: { id: ResearchAudience; label: string }[] = [
-  { id: 'academic', label: 'Acadêmica' },
-  { id: 'executive', label: 'Executiva' },
-  { id: 'public', label: 'Geral / Público' },
-]
+// ─── Default configs ──────────────────────────────────────────────────────────
+const DEFAULT_FASHION:    FashionConfig    = { goal: 'evaluate', collectionName: '', collectionType: 'own', licensedBrand: '', styleNotes: '', decliningItem: '', decliningReason: '', retailer: '', targetAge: '', targetGender: '', season: '', priceRange: '' }
+const DEFAULT_CONSULTING: ConsultingConfig = { goal: 'debate', company: '', industry: '', problem: '', constraints: '', optionA: '', optionB: '', optionC: '' }
+const DEFAULT_SOCIAL:     SocialConfig     = { goal: 'launch', content: '', platform: 'Twitter/X', targetDemo: '', campaignObjective: 'awareness' }
+const DEFAULT_RESEARCH:   ResearchConfig   = { goal: 'synthesize', question: '', domain: '', audience: 'executive', dataContext: '' }
 
-// ─── Agent toggle ──────────────────────────────────────────────────────────────
-function AgentToggle({ persona, selected, onToggle }: { persona: AgentPersona; selected: boolean; onToggle: () => void }) {
-  return (
-    <button
-      onClick={onToggle}
-      className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all duration-150 ${
-        selected ? 'bg-white border-gray-300 shadow-sm opacity-100' : 'bg-gray-50 border-gray-200 opacity-60 hover:opacity-90'
-      }`}
-    >
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-base border ${selected ? 'bg-white border-gray-200' : 'bg-gray-100 border-gray-200'}`}>
-        {persona.emoji}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className={`text-xs font-semibold ${selected ? 'text-gray-800' : 'text-gray-400'}`}>{persona.name}</p>
-        <p className="text-xs text-gray-400 truncate">{persona.role}</p>
-      </div>
-      <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all ${selected ? 'bg-brand-500 border-brand-500' : 'border-gray-300'}`} />
-    </button>
-  )
-}
-
-// ─── Chip selector helper ─────────────────────────────────────────────────────
-function Chips<T extends string>({
-  options, value, onChange, activeClass,
-}: { options: { id: T; label: string }[]; value: T; onChange: (v: T) => void; activeClass: string }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {options.map((o) => (
-        <button key={o.id} onClick={() => onChange(o.id)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${value === o.id ? activeClass : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
-        >{o.label}</button>
-      ))}
-    </div>
-  )
-}
-
+// ─── Small UI helpers ─────────────────────────────────────────────────────────
 function StringChips({ options, value, onChange, activeClass }: { options: string[]; value: string; onChange: (v: string) => void; activeClass: string }) {
   return (
     <div className="flex flex-wrap gap-2">
@@ -120,42 +83,64 @@ function StringChips({ options, value, onChange, activeClass }: { options: strin
   )
 }
 
+function Chips<T extends string>({ options, value, onChange, activeClass }: { options: { id: T; label: string }[]; value: T; onChange: (v: T) => void; activeClass: string }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((o) => (
+        <button key={o.id} onClick={() => onChange(o.id)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${value === o.id ? activeClass : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+        >{o.label}</button>
+      ))}
+    </div>
+  )
+}
+
 function GoalSelector<T extends string>({ goals, value, onChange, activeClass }: {
   goals: { id: T; icon: React.ElementType; label: string; desc: string }[]
-  value: T
-  onChange: (v: T) => void
-  activeClass: string
-  iconActiveClass: string
+  value: T; onChange: (v: T) => void; activeClass: string
 }) {
   return (
-    <div className="flex flex-col gap-2 mb-6">
+    <div className="flex flex-col gap-2 mb-5">
       {goals.map(({ id, icon: Icon, label, desc }) => (
         <button key={id} onClick={() => onChange(id)}
           className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${value === id ? activeClass : 'bg-white border-gray-200 hover:border-gray-300'}`}
         >
           <div className={`p-1.5 rounded-lg mt-0.5 flex-shrink-0 ${value === id ? 'bg-white/60' : 'bg-gray-100'}`}>
-            <Icon size={14} className={value === id ? 'text-current opacity-80' : 'text-gray-400'} />
+            <Icon size={14} className={value === id ? 'opacity-80' : 'text-gray-400'} />
           </div>
           <div className="flex-1">
-            <p className={`text-sm font-semibold ${value === id ? 'text-current' : 'text-gray-500'}`}>{label}</p>
+            <p className={`text-sm font-semibold ${value === id ? '' : 'text-gray-500'}`}>{label}</p>
             <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
           </div>
-          <div className={`ml-auto mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all ${value === id ? 'bg-current border-current opacity-80' : 'border-gray-300'}`} />
+          <div className={`ml-auto mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 ${value === id ? 'bg-current border-current opacity-70' : 'border-gray-300'}`} />
         </button>
       ))}
     </div>
   )
 }
 
-// ─── Fashion shared fields ────────────────────────────────────────────────────
+function AgentToggle({ persona, selected, onToggle }: { persona: AgentPersona; selected: boolean; onToggle: () => void }) {
+  return (
+    <button onClick={onToggle}
+      className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all duration-150 ${selected ? 'bg-white border-gray-300 shadow-sm opacity-100' : 'bg-gray-50 border-gray-200 opacity-60 hover:opacity-90'}`}
+    >
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-base border ${selected ? 'bg-white border-gray-200' : 'bg-gray-100 border-gray-200'}`}>{persona.emoji}</div>
+      <div className="flex-1 min-w-0">
+        <p className={`text-xs font-semibold ${selected ? 'text-gray-800' : 'text-gray-400'}`}>{persona.name}</p>
+        <p className="text-xs text-gray-400 truncate">{persona.role}</p>
+      </div>
+      <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${selected ? 'bg-brand-500 border-brand-500' : 'border-gray-300'}`} />
+    </button>
+  )
+}
+
+// ─── Fashion forms ────────────────────────────────────────────────────────────
 function FashionSharedFields({ config, onChange }: { config: FashionConfig; onChange: (c: FashionConfig) => void }) {
-  function set<K extends keyof FashionConfig>(key: K, val: FashionConfig[K]) {
-    onChange({ ...config, [key]: val })
-  }
+  function set<K extends keyof FashionConfig>(k: K, v: FashionConfig[K]) { onChange({ ...config, [k]: v }) }
   return (
     <>
       <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Varejista alvo <span className="text-red-400">*</span></label>
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Varejista <span className="text-red-400">*</span></label>
         <StringChips options={RETAILERS} value={config.retailer} onChange={(v) => set('retailer', v)} activeClass="bg-fuchsia-50 text-fuchsia-600 border-fuchsia-300" />
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -169,7 +154,7 @@ function FashionSharedFields({ config, onChange }: { config: FashionConfig; onCh
         </div>
       </div>
       <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Estação / Entrega</label>
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Estação</label>
         <StringChips options={SEASONS} value={config.season} onChange={(v) => set('season', v)} activeClass="bg-fuchsia-50 text-fuchsia-600 border-fuchsia-300" />
       </div>
       <div>
@@ -180,413 +165,115 @@ function FashionSharedFields({ config, onChange }: { config: FashionConfig; onCh
   )
 }
 
-function FashionEvaluateForm({ config, onChange }: { config: FashionConfig; onChange: (c: FashionConfig) => void }) {
-  function set<K extends keyof FashionConfig>(key: K, val: FashionConfig[K]) {
-    onChange({ ...config, [key]: val })
-  }
-  return (
-    <div className="flex flex-col gap-5">
-      <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Tipo de coleção</label>
-        <div className="grid grid-cols-2 gap-2">
-          {(['own', 'licensed'] as const).map((t) => (
-            <button key={t} onClick={() => set('collectionType', t)}
-              className={`py-2.5 rounded-xl text-sm font-medium border transition-all ${config.collectionType === t ? 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-300' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
-            >{t === 'own' ? '🏷️ Coleção Própria' : '🤝 Licenciado'}</button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-          {config.collectionType === 'licensed' ? 'Nome do Licenciado' : 'Nome da Coleção'} <span className="text-red-400">*</span>
-        </label>
-        <input className="input"
-          placeholder={config.collectionType === 'licensed' ? 'ex: NASA, Disney, Marvel…' : 'ex: Coleção Y2K Revival, Terra & Mar…'}
-          value={config.collectionType === 'licensed' ? (config.licensedBrand ?? '') : config.collectionName}
-          onChange={(e) => config.collectionType === 'licensed' ? set('licensedBrand', e.target.value) : set('collectionName', e.target.value)}
-        />
-      </div>
-      {config.collectionType === 'licensed' && (
-        <div>
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Nome da Linha / Coleção</label>
-          <input className="input" placeholder="ex: Coleção NASA × Renner Outono 2026" value={config.collectionName} onChange={(e) => set('collectionName', e.target.value)} />
-        </div>
-      )}
-      <FashionSharedFields config={config} onChange={onChange} />
-      <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-          Referências de estilo, paleta, silhuetas & contexto <span className="text-red-400">*</span>
-        </label>
-        <textarea className="input resize-none h-32"
-          placeholder={config.collectionType === 'licensed'
-            ? 'Por que este licenciado? Peças-chave previstas, paleta, inspirações, diferenciais…'
-            : 'Proposta da coleção, tendências, peças-chave, paleta, materiais, diferenciais…'}
-          value={config.styleNotes}
-          onChange={(e) => set('styleNotes', e.target.value)}
-        />
-      </div>
-    </div>
-  )
-}
-
-function FashionDiscoveryForm({ config, onChange }: { config: FashionConfig; onChange: (c: FashionConfig) => void }) {
-  function set<K extends keyof FashionConfig>(key: K, val: FashionConfig[K]) {
-    onChange({ ...config, [key]: val })
-  }
-  const isLicense = config.goal === 'discover_license'
-  return (
-    <div className="flex flex-col gap-5">
-      <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-          {isLicense ? 'Qual licenciado está parando de vender?' : 'Qual coleção / linha está caindo?'} <span className="text-red-400">*</span>
-        </label>
-        <input className="input"
-          placeholder={isLicense ? 'ex: Sonic the Hedgehog, Power Rangers, Hello Kitty…' : 'ex: Coleção floral verão 25, Linha básicos premium…'}
-          value={config.decliningItem ?? ''} onChange={(e) => set('decliningItem', e.target.value)}
-        />
-      </div>
-      <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Por que está caindo? <span className="text-gray-400 normal-case font-normal">(opcional)</span></label>
-        <textarea className="input resize-none h-24"
-          placeholder={isLicense
-            ? 'ex: Sell-through caiu de 85% para 40% nos últimos 2 ciclos, estoque acumulado…'
-            : 'ex: Consumidora cansou do estampado, cores fora de tendência, margem apertando…'}
-          value={config.decliningReason ?? ''} onChange={(e) => set('decliningReason', e.target.value)}
-        />
-      </div>
-      <FashionSharedFields config={config} onChange={onChange} />
-      <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Restrições ou requisitos <span className="text-gray-400 normal-case font-normal">(opcional)</span></label>
-        <textarea className="input resize-none h-20"
-          placeholder={isLicense
-            ? 'ex: Preciso de licença com forte appeal infantil, não posso usar IPs da Disney…'
-            : 'ex: Sem estampas (já saturado), deve usar matéria-prima nacional…'}
-          value={config.styleNotes} onChange={(e) => set('styleNotes', e.target.value)}
-        />
-      </div>
-    </div>
-  )
-}
-
-// ─── Consulting form ──────────────────────────────────────────────────────────
-function ConsultingForm({ config, onChange }: { config: ConsultingConfig; onChange: (c: ConsultingConfig) => void }) {
-  function set<K extends keyof ConsultingConfig>(key: K, val: ConsultingConfig[K]) {
-    onChange({ ...config, [key]: val })
-  }
-  return (
-    <div className="flex flex-col gap-5">
-      <GoalSelector
-        goals={CONSULTING_GOALS}
-        value={config.goal}
-        onChange={(v) => set('goal', v)}
-        activeClass="bg-blue-50 border-blue-300 text-blue-700"
-        iconActiveClass="text-blue-600"
-      />
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Empresa / Produto <span className="text-red-400">*</span></label>
-          <input className="input" placeholder="ex: Minha startup, Produto X…" value={config.company} onChange={(e) => set('company', e.target.value)} />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Setor</label>
-          <StringChips options={INDUSTRIES} value={config.industry} onChange={(v) => set('industry', v)} activeClass="bg-blue-50 text-blue-600 border-blue-300" />
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-          {config.goal === 'decide' ? 'Contexto do problema / decisão' : 'Problema ou oportunidade'} <span className="text-red-400">*</span>
-        </label>
-        <textarea className="input resize-none h-28"
-          placeholder={config.goal === 'decide'
-            ? 'Descreva o contexto da decisão: por que é difícil, o que está em jogo, quais as pressões…'
-            : 'Descreva o desafio, oportunidade de mercado, ou situação que precisa de análise estratégica…'}
-          value={config.problem} onChange={(e) => set('problem', e.target.value)}
-        />
-      </div>
-
-      {config.goal === 'decide' && (
-        <div className="flex flex-col gap-3">
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Opções em disputa <span className="text-red-400">*</span></label>
-          <div>
-            <p className="text-xs text-gray-500 mb-1.5">Opção A</p>
-            <input className="input" placeholder="ex: Expandir para o mercado europeu agora" value={config.optionA ?? ''} onChange={(e) => set('optionA', e.target.value)} />
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 mb-1.5">Opção B</p>
-            <input className="input" placeholder="ex: Fortalecer posição no mercado doméstico primeiro" value={config.optionB ?? ''} onChange={(e) => set('optionB', e.target.value)} />
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 mb-1.5">Opção C <span className="text-gray-400 font-normal">(opcional)</span></p>
-            <input className="input" placeholder="ex: Adquirir um player regional já estabelecido" value={config.optionC ?? ''} onChange={(e) => set('optionC', e.target.value)} />
-          </div>
-        </div>
-      )}
-
-      <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Restrições & contexto adicional <span className="text-gray-400 normal-case font-normal">(opcional)</span></label>
-        <textarea className="input resize-none h-20"
-          placeholder="ex: Orçamento limitado a R$2M, equipe de 40 pessoas, janela de 6 meses, regulação do setor X…"
-          value={config.constraints} onChange={(e) => set('constraints', e.target.value)}
-        />
-      </div>
-    </div>
-  )
-}
-
-// ─── Social form ──────────────────────────────────────────────────────────────
-function SocialForm({ config, onChange }: { config: SocialConfig; onChange: (c: SocialConfig) => void }) {
-  function set<K extends keyof SocialConfig>(key: K, val: SocialConfig[K]) {
-    onChange({ ...config, [key]: val })
-  }
-  return (
-    <div className="flex flex-col gap-5">
-      <GoalSelector
-        goals={SOCIAL_GOALS}
-        value={config.goal}
-        onChange={(v) => set('goal', v)}
-        activeClass="bg-pink-50 border-pink-300 text-pink-700"
-        iconActiveClass="text-pink-600"
-      />
-
-      <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Plataforma principal</label>
-        <StringChips options={SOCIAL_PLATFORMS} value={config.platform} onChange={(v) => set('platform', v)} activeClass="bg-pink-50 text-pink-600 border-pink-300" />
-      </div>
-
-      <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-          {config.goal === 'crisis' ? 'Descreva a crise' : 'O que está sendo lançado / anunciado'} <span className="text-red-400">*</span>
-        </label>
-        <textarea className="input resize-none h-32"
-          placeholder={config.goal === 'crisis'
-            ? 'ex: Vazamento de dados de usuários, produto defeituoso que causou dano, declaração polêmica de executivo, campanha que viralizou negativamente…'
-            : 'ex: Nova feature de IA que resume e-mails automaticamente. Será opt-in, gratuita para todos, disponível amanhã…'}
-          value={config.content} onChange={(e) => set('content', e.target.value)}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Público-alvo</label>
-          <input className="input" placeholder="ex: Millennials tech-savvy, mães 30-45 anos…" value={config.targetDemo} onChange={(e) => set('targetDemo', e.target.value)} />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-            {config.goal === 'crisis' ? 'Objetivo da resposta' : 'Objetivo da campanha'}
-          </label>
-          <Chips
-            options={CAMPAIGN_OBJECTIVES}
-            value={config.campaignObjective}
-            onChange={(v) => set('campaignObjective', v)}
-            activeClass="bg-pink-50 text-pink-600 border-pink-300"
-          />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Research form ────────────────────────────────────────────────────────────
-function ResearchForm({ config, onChange }: { config: ResearchConfig; onChange: (c: ResearchConfig) => void }) {
-  function set<K extends keyof ResearchConfig>(key: K, val: ResearchConfig[K]) {
-    onChange({ ...config, [key]: val })
-  }
-  return (
-    <div className="flex flex-col gap-5">
-      <GoalSelector
-        goals={RESEARCH_GOALS}
-        value={config.goal}
-        onChange={(v) => set('goal', v)}
-        activeClass="bg-purple-50 border-purple-300 text-purple-700"
-        iconActiveClass="text-purple-600"
-      />
-
-      <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-          {config.goal === 'validate' ? 'Hipótese a validar' : 'Pergunta de pesquisa'} <span className="text-red-400">*</span>
-        </label>
-        <input className="input"
-          placeholder={config.goal === 'validate'
-            ? 'ex: Acredito que onboarding é o principal motivo de churn nos primeiros 30 dias'
-            : 'ex: Quais são os principais drivers de retenção em apps de saúde?'}
-          value={config.question} onChange={(e) => set('question', e.target.value)}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Domínio / Área</label>
-          <StringChips options={RESEARCH_DOMAINS} value={config.domain} onChange={(v) => set('domain', v)} activeClass="bg-purple-50 text-purple-600 border-purple-300" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Audiência dos resultados</label>
-          <Chips
-            options={RESEARCH_AUDIENCES}
-            value={config.audience}
-            onChange={(v) => set('audience', v)}
-            activeClass="bg-purple-50 text-purple-600 border-purple-300"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-          {config.goal === 'validate' ? 'Dados / evidências disponíveis' : 'Dados, feedbacks ou contexto'} <span className="text-red-400">*</span>
-        </label>
-        <textarea className="input resize-none h-36"
-          placeholder={config.goal === 'validate'
-            ? 'ex: Analisamos 1.200 churns dos últimos 6 meses. 60% saíram antes do dia 14. O tutorial tem 8 steps e taxa de conclusão de 34%…'
-            : 'ex: Analisamos 2.400 respostas de feedback do Q1. Temas principais: atrito no onboarding, preocupações com preço, pedidos de mobile…'}
-          value={config.dataContext} onChange={(e) => set('dataContext', e.target.value)}
-        />
-      </div>
-    </div>
-  )
-}
-
 // ─── Scenario builders ────────────────────────────────────────────────────────
 function buildFashionScenario(fc: FashionConfig): string {
   if (fc.goal === 'discover_license' || fc.goal === 'discover_own') {
     const type = fc.goal === 'discover_license' ? 'LICENSED BRAND' : 'OWN-BRAND COLLECTION'
-    return `FASHION DISCOVERY BRIEF — RETAIL INTELLIGENCE
-
-SITUATION — DECLINING ${type}:
-${fc.goal === 'discover_license' ? `Licensed brand losing momentum: ${fc.decliningItem || '(not specified)'}` : `Collection/line in decline: ${fc.decliningItem || '(not specified)'}`}
-Retailer: ${fc.retailer || '(not specified)'}
-Target audience: ${fc.targetAge || '(not specified)'}, ${fc.targetGender || '(not specified)'}
-Season context: ${fc.season || '(not specified)'}
-Price point: ${fc.priceRange || '(not specified)'}
-${fc.decliningReason ? `\nWhy it is declining:\n${fc.decliningReason}` : ''}
-${fc.styleNotes ? `\nConstraints & requirements:\n${fc.styleNotes}` : ''}
-
-CHALLENGE: ${fc.goal === 'discover_license'
-  ? `The "${fc.decliningItem}" license is underperforming. Identify which licensed brand(s) should replace it to recover commercial performance for this retailer and audience. Propose specific alternatives with commercial rationale, trend positioning, and risk assessment.`
-  : `The current collection direction is declining. Identify which new style concept, aesthetic, or product direction should replace it. Propose specific alternatives with commercial rationale, trend positioning, and differentiation strategy.`}
-
-TASK FOR EACH AGENT: From your specific perspective (trends, buying, consumer, brand, visual merchandising, ESG), propose and evaluate replacement options. Be specific — name actual IPs, brands, trends, or concepts. Explain why each would succeed where the current one is failing.`
+    return `FASHION DISCOVERY BRIEF — RETAIL INTELLIGENCE\n\nSITUATION — DECLINING ${type}:\n${fc.goal === 'discover_license' ? `Licensed brand losing momentum: ${fc.decliningItem || '(not specified)'}` : `Collection/line in decline: ${fc.decliningItem || '(not specified)'}`}\nRetailer: ${fc.retailer || '(not specified)'}\nTarget audience: ${fc.targetAge || '(not specified)'}, ${fc.targetGender || '(not specified)'}\nSeason context: ${fc.season || '(not specified)'}\nPrice point: ${fc.priceRange || '(not specified)'}${fc.decliningReason ? `\n\nWhy it is declining:\n${fc.decliningReason}` : ''}${fc.styleNotes ? `\n\nConstraints & requirements:\n${fc.styleNotes}` : ''}\n\nCHALLENGE: ${fc.goal === 'discover_license' ? `The "${fc.decliningItem}" license is underperforming. Identify which licensed brand(s) should replace it to recover commercial performance. Propose specific alternatives with commercial rationale, trend positioning, and risk assessment.` : `The current collection direction is declining. Identify which new style concept, aesthetic, or product direction should replace it. Propose specific alternatives with commercial rationale.`}\n\nTASK FOR EACH AGENT: From your specific perspective, propose and evaluate replacement options. Be specific — name actual IPs, brands, trends, or concepts.`
   }
-
-  const collName = fc.collectionType === 'licensed'
-    ? `Licensed collection: ${fc.licensedBrand ?? '(unnamed)'} — ${fc.collectionName || '(line TBD)'}`
-    : `Own collection: ${fc.collectionName || '(unnamed)'}`
-
-  return `FASHION BRIEF — RETAIL INTELLIGENCE SIMULATION
-
-${collName}
-Retailer: ${fc.retailer || '(not specified)'}
-Target audience: ${fc.targetAge || '(not specified)'}, ${fc.targetGender || '(not specified)'}
-Season / Delivery: ${fc.season || '(not specified)'}
-Price point: ${fc.priceRange || '(not specified)'}
-Collection type: ${fc.collectionType === 'licensed' ? 'Licensed brand collaboration' : 'Retailer own-label collection'}
-
-STYLE REFERENCES & CONTEXT:
-${fc.styleNotes || '(no additional context provided)'}
-
-TASK: Evaluate the commercial, creative, and strategic viability of this collection/licensing deal for the retailer. Assess trend alignment, sell-through potential, brand fit, consumer appeal, visual merchandising potential, and ESG risks.`
+  const collName = fc.collectionType === 'licensed' ? `Licensed collection: ${fc.licensedBrand ?? '(unnamed)'} — ${fc.collectionName || '(line TBD)'}` : `Own collection: ${fc.collectionName || '(unnamed)'}`
+  return `FASHION BRIEF — RETAIL INTELLIGENCE SIMULATION\n\n${collName}\nRetailer: ${fc.retailer || '(not specified)'}\nTarget audience: ${fc.targetAge || '(not specified)'}, ${fc.targetGender || '(not specified)'}\nSeason / Delivery: ${fc.season || '(not specified)'}\nPrice point: ${fc.priceRange || '(not specified)'}\n\nSTYLE REFERENCES & CONTEXT:\n${fc.styleNotes || '(no additional context provided)'}\n\nTASK: Evaluate the commercial, creative, and strategic viability of this collection/licensing deal.`
 }
 
 function buildConsultingScenario(cc: ConsultingConfig): string {
-  const header = cc.goal === 'decide'
-    ? 'CONSULTING BRIEF — DECISION SUPPORT'
-    : 'CONSULTING BRIEF — STRATEGIC ANALYSIS'
-
-  let body = `${header}
-
-Company / Product: ${cc.company || '(not specified)'}
-Industry: ${cc.industry || '(not specified)'}
-
-SITUATION:
-${cc.problem || '(not specified)'}
-`
-  if (cc.goal === 'decide') {
-    body += `
-OPTIONS IN CONTENTION:
-• Option A: ${cc.optionA || '(not specified)'}
-• Option B: ${cc.optionB || '(not specified)'}
-${cc.optionC ? `• Option C: ${cc.optionC}` : ''}
-`
-  }
-
-  if (cc.constraints) {
-    body += `
-CONSTRAINTS & CONTEXT:
-${cc.constraints}
-`
-  }
-
+  const header = cc.goal === 'decide' ? 'CONSULTING BRIEF — DECISION SUPPORT' : 'CONSULTING BRIEF — STRATEGIC ANALYSIS'
+  let body = `${header}\n\nCompany / Product: ${cc.company || '(not specified)'}\nIndustry: ${cc.industry || '(not specified)'}\n\nSITUATION:\n${cc.problem || '(not specified)'}\n`
+  if (cc.goal === 'decide') body += `\nOPTIONS IN CONTENTION:\n• Option A: ${cc.optionA || '(not specified)'}\n• Option B: ${cc.optionB || '(not specified)'}${cc.optionC ? `\n• Option C: ${cc.optionC}` : ''}\n`
+  if (cc.constraints) body += `\nCONSTRAINTS & CONTEXT:\n${cc.constraints}\n`
   body += cc.goal === 'decide'
-    ? `\nTASK: Each agent must evaluate the options from their unique perspective (strategy, risk, data, integration, innovation). Weight the pros and cons, identify the key decision criteria, and give a clear recommendation with rationale. At the end, each agent must explicitly state which option they support and why.`
-    : `\nTASK: Analyze this situation from your unique perspective. Surface key insights, risks, opportunities, and recommendations. Build on what previous agents have said — agree, challenge, or extend their thinking with new angles.`
-
+    ? `\nTASK: Each agent must evaluate the options from their unique perspective and give a clear recommendation. In the final round, explicitly state which option you support and why.`
+    : `\nTASK: Analyze this situation from your unique perspective. Surface key insights, risks, opportunities, and recommendations. Build on or challenge what previous agents said.`
   return body
 }
 
 function buildSocialScenario(sc: SocialConfig): string {
-  const header = sc.goal === 'crisis'
-    ? 'SOCIAL BRIEF — PR CRISIS SIMULATION'
-    : 'SOCIAL BRIEF — LAUNCH / CAMPAIGN SIMULATION'
-
-  return `${header}
-
-Platform: ${sc.platform || '(not specified)'}
-Target audience: ${sc.targetDemo || '(not specified)'}
-Objective: ${sc.campaignObjective}
-
-${sc.goal === 'crisis' ? 'CRISIS SITUATION:' : 'ANNOUNCEMENT / CONTENT:'}
-${sc.content || '(not specified)'}
-
-TASK: ${sc.goal === 'crisis'
-  ? 'Each agent must react to this crisis from their social media persona. How does the public perceive this? What narratives are forming? What should the brand do? The Moderator should assess the overall temperature and suggest a crisis response strategy.'
-  : 'Each agent must react to this announcement from their social media persona and perspective. Would they engage? Share? Criticize? What would they post? The Moderator should summarize the overall public reaction and predict campaign performance.'}`
+  return `${sc.goal === 'crisis' ? 'SOCIAL BRIEF — PR CRISIS SIMULATION' : 'SOCIAL BRIEF — LAUNCH / CAMPAIGN SIMULATION'}\n\nPlatform: ${sc.platform || '(not specified)'}\nTarget audience: ${sc.targetDemo || '(not specified)'}\nObjective: ${sc.campaignObjective}\n\n${sc.goal === 'crisis' ? 'CRISIS SITUATION:' : 'ANNOUNCEMENT / CONTENT:'}\n${sc.content || '(not specified)'}\n\nTASK: ${sc.goal === 'crisis' ? 'Each agent must react from their social persona. Identify forming narratives, assess damage level, and propose a crisis response strategy. Moderator summarizes overall temperature and recommended actions.' : 'Each agent reacts from their social persona. Would they engage, share, criticize? What would they post? Moderator summarizes overall reaction and predicts campaign performance.'}`
 }
 
 function buildResearchScenario(rc: ResearchConfig): string {
-  const header = rc.goal === 'validate'
-    ? 'RESEARCH BRIEF — HYPOTHESIS VALIDATION'
-    : 'RESEARCH BRIEF — INSIGHT SYNTHESIS'
-
-  return `${header}
-
-Domain: ${rc.domain || '(not specified)'}
-Target audience for findings: ${rc.audience}
-${rc.goal === 'validate' ? `\nHYPOTHESIS TO VALIDATE:\n${rc.question || '(not specified)'}` : `\nRESEARCH QUESTION:\n${rc.question || '(not specified)'}`}
-
-DATA / CONTEXT:
-${rc.dataContext || '(not specified)'}
-
-TASK: ${rc.goal === 'validate'
-  ? 'Each agent must evaluate this hypothesis from their unique perspective. Is the evidence strong enough? Are there alternative interpretations? What methodology concerns exist? The Synthesizer must deliver a final verdict: Supported / Partially Supported / Rejected, with confidence level and the key reasons.'
-  : 'Each agent must analyze this data from their unique perspective. Identify patterns, insights, risks, and opportunities. The Synthesizer must distill a clear "so what" — the 3 most actionable insights from the discussion.'}`
+  return `${rc.goal === 'validate' ? 'RESEARCH BRIEF — HYPOTHESIS VALIDATION' : 'RESEARCH BRIEF — INSIGHT SYNTHESIS'}\n\nDomain: ${rc.domain || '(not specified)'}\nAudience: ${rc.audience}\n${rc.goal === 'validate' ? `\nHYPOTHESIS:\n${rc.question || '(not specified)'}` : `\nRESEARCH QUESTION:\n${rc.question || '(not specified)'}`}\n\nDATA / CONTEXT:\n${rc.dataContext || '(not specified)'}\n\nTASK: ${rc.goal === 'validate' ? 'Each agent evaluates this hypothesis from their perspective. Synthesizer delivers a final verdict: Supported / Partially Supported / Rejected, with confidence level and key reasons.' : 'Each agent analyzes this data from their perspective. Synthesizer distills the 3 most actionable insights from the full discussion.'}`
 }
 
-// ─── Default configs ──────────────────────────────────────────────────────────
-const DEFAULT_FASHION: FashionConfig = { goal: 'evaluate', collectionName: '', collectionType: 'own', licensedBrand: '', styleNotes: '', decliningItem: '', decliningReason: '', retailer: '', targetAge: '', targetGender: '', season: '', priceRange: '' }
-const DEFAULT_CONSULTING: ConsultingConfig = { goal: 'debate', company: '', industry: '', problem: '', constraints: '', optionA: '', optionB: '', optionC: '' }
-const DEFAULT_SOCIAL: SocialConfig = { goal: 'launch', content: '', platform: 'Twitter/X', targetDemo: '', campaignObjective: 'awareness' }
-const DEFAULT_RESEARCH: ResearchConfig = { goal: 'synthesize', question: '', domain: '', audience: 'executive', dataContext: '' }
+// ─── Custom agent builder ─────────────────────────────────────────────────────
+function CustomAgentBuilder({ onAdd, onClose }: { onAdd: (p: AgentPersona) => void; onClose: () => void }) {
+  const [name, setName] = useState('')
+  const [role, setRole] = useState('')
+  const [emoji, setEmoji] = useState('🤖')
+  const [prompt, setPrompt] = useState('')
+
+  function handleAdd() {
+    if (!name.trim() || !role.trim() || !prompt.trim()) return
+    const agent: AgentPersona = {
+      id: `custom_${Date.now()}`,
+      name, role, emoji,
+      description: role,
+      systemPrompt: prompt,
+      color: 'text-gray-600',
+      bgColor: 'bg-gray-500/10 border-gray-500/20',
+      sentimentBias: 0,
+    }
+    onAdd(agent)
+    onClose()
+  }
+
+  return (
+    <div className="card border-gray-300 p-4 flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-gray-700">Custom Agent</p>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+      </div>
+      <div className="grid grid-cols-[48px_1fr] gap-3">
+        <div>
+          <label className="block text-xs text-gray-400 mb-1">Emoji</label>
+          <input className="input text-center text-lg px-1" value={emoji} onChange={(e) => setEmoji(e.target.value)} maxLength={2} />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-400 mb-1">Name</label>
+          <input className="input" placeholder="ex: The CFO" value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs text-gray-400 mb-1">Role</label>
+        <input className="input" placeholder="ex: Chief Financial Officer" value={role} onChange={(e) => setRole(e.target.value)} />
+      </div>
+      <div>
+        <label className="block text-xs text-gray-400 mb-1">System prompt</label>
+        <textarea className="input resize-none h-24" placeholder="Describe how this agent thinks, what they prioritize, and their communication style…" value={prompt} onChange={(e) => setPrompt(e.target.value)} />
+      </div>
+      <button onClick={handleAdd} disabled={!name.trim() || !role.trim() || !prompt.trim()}
+        className="btn-primary text-sm py-2 disabled:opacity-40"
+      >Add Agent</button>
+    </div>
+  )
+}
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function NewSimulationPage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
-  const { createSimulation } = useSimulationStore()
+  const { createSimulation, linkSimulations } = useSimulationStore()
+  const { selectedProvider } = useLLMStore()
 
   const defaultMode = (params.get('mode') as SimulationMode) || 'consulting'
 
-  const [name, setName] = useState('')
-  const [mode, setMode] = useState<SimulationMode>(defaultMode)
-  const [fashionConfig, setFashionConfig] = useState<FashionConfig>(DEFAULT_FASHION)
+  const [name, setName]                         = useState('')
+  const [mode, setMode]                         = useState<SimulationMode>(defaultMode)
+  const [fashionConfig, setFashionConfig]       = useState<FashionConfig>(DEFAULT_FASHION)
   const [consultingConfig, setConsultingConfig] = useState<ConsultingConfig>(DEFAULT_CONSULTING)
-  const [socialConfig, setSocialConfig] = useState<SocialConfig>(DEFAULT_SOCIAL)
-  const [researchConfig, setResearchConfig] = useState<ResearchConfig>(DEFAULT_RESEARCH)
-  const [selectedAgentIds, setSelectedAgentIds] = useState<Set<string>>(
-    new Set(PERSONAS_BY_MODE[defaultMode].map((p) => p.id)),
-  )
+  const [socialConfig, setSocialConfig]         = useState<SocialConfig>(DEFAULT_SOCIAL)
+  const [researchConfig, setResearchConfig]     = useState<ResearchConfig>(DEFAULT_RESEARCH)
+  const [customAgents, setCustomAgents]         = useState<AgentPersona[]>([])
+  const [selectedAgentIds, setSelectedAgentIds] = useState<Set<string>>(new Set(PERSONAS_BY_MODE[defaultMode].map((p) => p.id)))
+  const [rounds, setRounds]                     = useState(1)
+  const [enableAdvocatus, setEnableAdvocatus]   = useState(false)
+  const [comparisonProvider, setComparisonProvider] = useState<LLMProvider | null>(null)
+  const [showCustomBuilder, setShowCustomBuilder]   = useState(false)
+  const [showTemplates, setShowTemplates]           = useState(false)
 
   useEffect(() => {
     setSelectedAgentIds(new Set(PERSONAS_BY_MODE[mode].map((p) => p.id)))
+    setCustomAgents([])
+    setShowCustomBuilder(false)
   }, [mode])
 
   function toggleAgent(id: string) {
@@ -598,12 +285,26 @@ export default function NewSimulationPage() {
     })
   }
 
+  function addCustomAgent(agent: AgentPersona) {
+    setCustomAgents((prev) => [...prev, agent])
+    setSelectedAgentIds((prev) => new Set([...prev, agent.id]))
+  }
+
+  function applyTemplate(templateId: string) {
+    const t = TEMPLATES_BY_MODE[mode].find((t) => t.id === templateId)
+    if (!t) return
+    if (t.consultingConfig) setConsultingConfig({ ...DEFAULT_CONSULTING, ...t.consultingConfig })
+    if (t.socialConfig)     setSocialConfig({ ...DEFAULT_SOCIAL, ...t.socialConfig })
+    if (t.researchConfig)   setResearchConfig({ ...DEFAULT_RESEARCH, ...t.researchConfig })
+    if (t.fashionConfig)    setFashionConfig({ ...DEFAULT_FASHION, ...t.fashionConfig })
+    setShowTemplates(false)
+  }
+
   function buildScenario(): string {
-    if (mode === 'fashion') return buildFashionScenario(fashionConfig)
+    if (mode === 'fashion')    return buildFashionScenario(fashionConfig)
     if (mode === 'consulting') return buildConsultingScenario(consultingConfig)
-    if (mode === 'social') return buildSocialScenario(socialConfig)
-    if (mode === 'research') return buildResearchScenario(researchConfig)
-    return ''
+    if (mode === 'social')     return buildSocialScenario(socialConfig)
+    return buildResearchScenario(researchConfig)
   }
 
   function buildDefaultName(): string {
@@ -611,18 +312,11 @@ export default function NewSimulationPage() {
       if (consultingConfig.goal === 'decide') return `Decisão: ${consultingConfig.company || 'Empresa'} — ${new Date().toLocaleDateString()}`
       return `Estratégia: ${consultingConfig.company || 'Empresa'} — ${new Date().toLocaleDateString()}`
     }
-    if (mode === 'social') {
-      if (socialConfig.goal === 'crisis') return `Crise de PR — ${socialConfig.platform}`
-      return `Lançamento — ${socialConfig.platform}`
-    }
-    if (mode === 'research') {
-      return researchConfig.question
-        ? `${researchConfig.question.slice(0, 50)}${researchConfig.question.length > 50 ? '…' : ''}`
-        : `Research — ${new Date().toLocaleDateString()}`
-    }
+    if (mode === 'social') return `${socialConfig.goal === 'crisis' ? 'Crise de PR' : 'Lançamento'} — ${socialConfig.platform}`
+    if (mode === 'research') return researchConfig.question ? researchConfig.question.slice(0, 50) + (researchConfig.question.length > 50 ? '…' : '') : `Research — ${new Date().toLocaleDateString()}`
     if (mode === 'fashion') {
       if (fashionConfig.goal === 'discover_license') return `Descoberta: substituto do ${fashionConfig.decliningItem || 'licenciado'}`
-      if (fashionConfig.goal === 'discover_own') return `Descoberta: nova direção para ${fashionConfig.decliningItem || 'coleção'}`
+      if (fashionConfig.goal === 'discover_own')     return `Descoberta: nova direção para ${fashionConfig.decliningItem || 'coleção'}`
       if (fashionConfig.collectionType === 'licensed' && fashionConfig.licensedBrand) return `${fashionConfig.licensedBrand} × ${fashionConfig.retailer || 'Retail'}`
       return fashionConfig.collectionName || `Fashion — ${new Date().toLocaleDateString()}`
     }
@@ -630,22 +324,44 @@ export default function NewSimulationPage() {
   }
 
   function handleCreate() {
-    const agents = PERSONAS_BY_MODE[mode].filter((p) => selectedAgentIds.has(p.id))
+    const allAgents = [...PERSONAS_BY_MODE[mode].filter((p) => selectedAgentIds.has(p.id)), ...customAgents.filter((p) => selectedAgentIds.has(p.id))]
+    const agents = enableAdvocatus ? [...allAgents, ADVOCATUS_DIABOLI] : allAgents
     const scenario = buildScenario()
-    const sim = createSimulation({
+    const simName = name.trim() || buildDefaultName()
+
+    const simA = createSimulation({
       id: crypto.randomUUID(),
-      name: name.trim() || buildDefaultName(),
-      mode,
-      scenario,
-      agents,
+      name: comparisonProvider ? `${simName} [A]` : simName,
+      mode, scenario, agents, rounds, enableAdvocatus,
       platform: mode === 'social' ? socialConfig.platform : undefined,
-      fashionConfig: mode === 'fashion' ? fashionConfig : undefined,
+      fashionConfig:    mode === 'fashion'    ? fashionConfig    : undefined,
       consultingConfig: mode === 'consulting' ? consultingConfig : undefined,
-      socialConfig: mode === 'social' ? socialConfig : undefined,
-      researchConfig: mode === 'research' ? researchConfig : undefined,
+      socialConfig:     mode === 'social'     ? socialConfig     : undefined,
+      researchConfig:   mode === 'research'   ? researchConfig   : undefined,
     })
-    navigate(`/simulation/${sim.id}`)
+
+    if (comparisonProvider) {
+      const simB = createSimulation({
+        id: crypto.randomUUID(),
+        name: `${simName} [B — ${PROVIDERS.find((p: { id: string; name: string }) => p.id === comparisonProvider)?.name ?? comparisonProvider}]`,
+        mode, scenario, agents, rounds, enableAdvocatus,
+        comparisonProvider,
+        platform: mode === 'social' ? socialConfig.platform : undefined,
+        fashionConfig:    mode === 'fashion'    ? fashionConfig    : undefined,
+        consultingConfig: mode === 'consulting' ? consultingConfig : undefined,
+        socialConfig:     mode === 'social'     ? socialConfig     : undefined,
+        researchConfig:   mode === 'research'   ? researchConfig   : undefined,
+      })
+      linkSimulations(simA.id, simB.id)
+      navigate(`/compare/${simA.id}/${simB.id}`)
+    } else {
+      navigate(`/simulation/${simA.id}`)
+    }
   }
+
+  const modeConfig = MODES.find((m) => m.id === mode)!
+
+  const allModeAgents = [...PERSONAS_BY_MODE[mode], ...customAgents]
 
   const isValid = (() => {
     if (mode === 'fashion') {
@@ -654,12 +370,11 @@ export default function NewSimulationPage() {
       return !!(fashionConfig.decliningItem?.trim())
     }
     if (mode === 'consulting') return consultingConfig.company.trim().length > 0 && consultingConfig.problem.trim().length > 10
-    if (mode === 'social') return socialConfig.content.trim().length > 10
-    if (mode === 'research') return researchConfig.question.trim().length > 5 && researchConfig.dataContext.trim().length > 10
-    return false
+    if (mode === 'social')     return socialConfig.content.trim().length > 10
+    return researchConfig.question.trim().length > 5 && researchConfig.dataContext.trim().length > 10
   })()
 
-  const modeConfig = MODES.find((m) => m.id === mode)!
+  const templates = TEMPLATES_BY_MODE[mode]
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -671,9 +386,7 @@ export default function NewSimulationPage() {
       <div className="flex flex-col gap-6">
         {/* Name */}
         <div>
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-            Simulation Name <span className="text-gray-400 normal-case font-normal">(optional)</span>
-          </label>
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Simulation Name <span className="text-gray-400 normal-case font-normal">(optional)</span></label>
           <input className="input" placeholder="Auto-generated if left blank" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
 
@@ -693,18 +406,125 @@ export default function NewSimulationPage() {
           </div>
         </div>
 
+        {/* Templates quick-load */}
+        {templates.length > 0 && (
+          <div>
+            <button onClick={() => setShowTemplates((v) => !v)}
+              className="flex items-center gap-2 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              <LayoutTemplate size={13} />
+              {showTemplates ? 'Hide templates' : `Load a template (${templates.length} available)`}
+            </button>
+            {showTemplates && (
+              <div className="mt-3 flex flex-col gap-2">
+                {templates.map((t) => (
+                  <button key={t.id} onClick={() => applyTemplate(t.id)}
+                    className="card-hover p-3 flex items-start gap-3 text-left"
+                  >
+                    <span className="text-xl flex-shrink-0">{t.emoji}</span>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700">{t.label}</p>
+                      <p className="text-xs text-gray-400">{t.desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Mode-specific brief */}
         <div className={`card border p-5 ${modeConfig.bg}`}>
           <p className={`text-xs font-semibold uppercase tracking-wider mb-4 ${modeConfig.color}`}>
             {mode === 'consulting' && '♟️ Consulting Brief'}
-            {mode === 'social' && '📣 Social Brief'}
-            {mode === 'research' && '🔬 Research Brief'}
-            {mode === 'fashion' && '🧵 Fashion Intelligence'}
+            {mode === 'social'     && '📣 Social Brief'}
+            {mode === 'research'   && '🔬 Research Brief'}
+            {mode === 'fashion'    && '🧵 Fashion Intelligence'}
           </p>
 
-          {mode === 'consulting' && <ConsultingForm config={consultingConfig} onChange={setConsultingConfig} />}
-          {mode === 'social' && <SocialForm config={socialConfig} onChange={setSocialConfig} />}
-          {mode === 'research' && <ResearchForm config={researchConfig} onChange={setResearchConfig} />}
+          {mode === 'consulting' && (
+            <div className="flex flex-col gap-5">
+              <GoalSelector goals={CONSULTING_GOALS} value={consultingConfig.goal} onChange={(v) => setConsultingConfig((c) => ({ ...c, goal: v }))} activeClass="bg-blue-50 border-blue-300 text-blue-700" />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Empresa / Produto <span className="text-red-400">*</span></label>
+                  <input className="input" placeholder="ex: Minha startup, Produto X…" value={consultingConfig.company} onChange={(e) => setConsultingConfig((c) => ({ ...c, company: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Setor</label>
+                  <StringChips options={INDUSTRIES} value={consultingConfig.industry} onChange={(v) => setConsultingConfig((c) => ({ ...c, industry: v }))} activeClass="bg-blue-50 text-blue-600 border-blue-300" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Problema / Contexto <span className="text-red-400">*</span></label>
+                <textarea className="input resize-none h-28" placeholder="Descreva o desafio, oportunidade, ou decisão que precisa de análise estratégica…" value={consultingConfig.problem} onChange={(e) => setConsultingConfig((c) => ({ ...c, problem: e.target.value }))} />
+              </div>
+              {consultingConfig.goal === 'decide' && (
+                <div className="flex flex-col gap-3">
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Opções em disputa <span className="text-red-400">*</span></label>
+                  {(['optionA', 'optionB', 'optionC'] as const).map((k, i) => (
+                    <div key={k}>
+                      <p className="text-xs text-gray-500 mb-1.5">Opção {String.fromCharCode(65 + i)}{i === 2 ? ' (opcional)' : ''}</p>
+                      <input className="input" placeholder={i === 0 ? 'ex: Expandir para o mercado europeu' : i === 1 ? 'ex: Fortalecer posição no mercado doméstico' : 'ex: Adquirir um player regional'} value={consultingConfig[k] ?? ''} onChange={(e) => setConsultingConfig((c) => ({ ...c, [k]: e.target.value }))} />
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Restrições <span className="text-gray-400 normal-case font-normal">(opcional)</span></label>
+                <textarea className="input resize-none h-20" placeholder="ex: Budget R$2M, equipe de 40 pessoas, janela de 6 meses, regulação do setor X…" value={consultingConfig.constraints} onChange={(e) => setConsultingConfig((c) => ({ ...c, constraints: e.target.value }))} />
+              </div>
+            </div>
+          )}
+
+          {mode === 'social' && (
+            <div className="flex flex-col gap-5">
+              <GoalSelector goals={SOCIAL_GOALS} value={socialConfig.goal} onChange={(v) => setSocialConfig((c) => ({ ...c, goal: v }))} activeClass="bg-pink-50 border-pink-300 text-pink-700" />
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Plataforma</label>
+                <StringChips options={SOCIAL_PLATFORMS} value={socialConfig.platform} onChange={(v) => setSocialConfig((c) => ({ ...c, platform: v }))} activeClass="bg-pink-50 text-pink-600 border-pink-300" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{socialConfig.goal === 'crisis' ? 'Descreva a crise' : 'O que está sendo lançado'} <span className="text-red-400">*</span></label>
+                <textarea className="input resize-none h-32" placeholder={socialConfig.goal === 'crisis' ? 'ex: Vazamento de dados de 150k usuários. E-mails expostos. Senhas e dados financeiros NÃO afetados…' : 'ex: Nova feature de IA que resume emails automaticamente. Opt-in, gratuita, disponível amanhã…'} value={socialConfig.content} onChange={(e) => setSocialConfig((c) => ({ ...c, content: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Público-alvo</label>
+                  <input className="input" placeholder="ex: Millennials tech-savvy, mães 30–45…" value={socialConfig.targetDemo} onChange={(e) => setSocialConfig((c) => ({ ...c, targetDemo: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Objetivo</label>
+                  <Chips options={CAMPAIGN_OBJECTIVES} value={socialConfig.campaignObjective} onChange={(v) => setSocialConfig((c) => ({ ...c, campaignObjective: v }))} activeClass="bg-pink-50 text-pink-600 border-pink-300" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {mode === 'research' && (
+            <div className="flex flex-col gap-5">
+              <GoalSelector goals={RESEARCH_GOALS} value={researchConfig.goal} onChange={(v) => setResearchConfig((c) => ({ ...c, goal: v }))} activeClass="bg-purple-50 border-purple-300 text-purple-700" />
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{researchConfig.goal === 'validate' ? 'Hipótese a validar' : 'Pergunta de pesquisa'} <span className="text-red-400">*</span></label>
+                <input className="input" placeholder={researchConfig.goal === 'validate' ? 'ex: Acredito que onboarding é o principal motivo de churn nos primeiros 30 dias' : 'ex: Quais são os principais drivers de retenção em apps de saúde?'} value={researchConfig.question} onChange={(e) => setResearchConfig((c) => ({ ...c, question: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Domínio</label>
+                  <StringChips options={RESEARCH_DOMAINS} value={researchConfig.domain} onChange={(v) => setResearchConfig((c) => ({ ...c, domain: v }))} activeClass="bg-purple-50 text-purple-600 border-purple-300" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Audiência</label>
+                  <Chips options={RESEARCH_AUDIENCES} value={researchConfig.audience} onChange={(v) => setResearchConfig((c) => ({ ...c, audience: v }))} activeClass="bg-purple-50 text-purple-600 border-purple-300" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Dados / Contexto <span className="text-red-400">*</span></label>
+                <textarea className="input resize-none h-36" placeholder={researchConfig.goal === 'validate' ? 'ex: Analisamos 1.200 churns dos últimos 6 meses. 60% saíram antes do dia 14. Tutorial tem 8 steps e 34% de conclusão…' : 'ex: Analisamos 2.400 respostas de feedback do Q1. Temas: onboarding, preço, pedidos de mobile…'} value={researchConfig.dataContext} onChange={(e) => setResearchConfig((c) => ({ ...c, dataContext: e.target.value }))} />
+              </div>
+            </div>
+          )}
+
           {mode === 'fashion' && (
             <>
               <div className="flex flex-col gap-2 mb-6">
@@ -723,11 +543,99 @@ export default function NewSimulationPage() {
                   </button>
                 ))}
               </div>
-              {fashionConfig.goal === 'evaluate'
-                ? <FashionEvaluateForm config={fashionConfig} onChange={setFashionConfig} />
-                : <FashionDiscoveryForm config={fashionConfig} onChange={setFashionConfig} />
-              }
+              {fashionConfig.goal === 'evaluate' ? (
+                <div className="flex flex-col gap-5">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Tipo de coleção</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(['own', 'licensed'] as const).map((t) => (
+                        <button key={t} onClick={() => setFashionConfig((c) => ({ ...c, collectionType: t }))}
+                          className={`py-2.5 rounded-xl text-sm font-medium border transition-all ${fashionConfig.collectionType === t ? 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-300' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+                        >{t === 'own' ? '🏷️ Coleção Própria' : '🤝 Licenciado'}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{fashionConfig.collectionType === 'licensed' ? 'Nome do Licenciado' : 'Nome da Coleção'} <span className="text-red-400">*</span></label>
+                    <input className="input" placeholder={fashionConfig.collectionType === 'licensed' ? 'ex: NASA, Disney, Marvel…' : 'ex: Coleção Y2K Revival, Terra & Mar…'} value={fashionConfig.collectionType === 'licensed' ? (fashionConfig.licensedBrand ?? '') : fashionConfig.collectionName} onChange={(e) => fashionConfig.collectionType === 'licensed' ? setFashionConfig((c) => ({ ...c, licensedBrand: e.target.value })) : setFashionConfig((c) => ({ ...c, collectionName: e.target.value }))} />
+                  </div>
+                  <FashionSharedFields config={fashionConfig} onChange={setFashionConfig} />
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Referências de estilo & contexto <span className="text-red-400">*</span></label>
+                    <textarea className="input resize-none h-32" placeholder="Proposta da coleção, tendências, peças-chave, paleta, materiais…" value={fashionConfig.styleNotes} onChange={(e) => setFashionConfig((c) => ({ ...c, styleNotes: e.target.value }))} />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-5">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{fashionConfig.goal === 'discover_license' ? 'Qual licenciado está parando de vender?' : 'Qual coleção está caindo?'} <span className="text-red-400">*</span></label>
+                    <input className="input" placeholder={fashionConfig.goal === 'discover_license' ? 'ex: Sonic the Hedgehog, Power Rangers…' : 'ex: Coleção floral verão 25…'} value={fashionConfig.decliningItem ?? ''} onChange={(e) => setFashionConfig((c) => ({ ...c, decliningItem: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Por que está caindo? <span className="text-gray-400 normal-case font-normal">(opcional)</span></label>
+                    <textarea className="input resize-none h-24" placeholder="ex: Sell-through caiu de 85% para 40% nos últimos 2 ciclos, estoque acumulado…" value={fashionConfig.decliningReason ?? ''} onChange={(e) => setFashionConfig((c) => ({ ...c, decliningReason: e.target.value }))} />
+                  </div>
+                  <FashionSharedFields config={fashionConfig} onChange={setFashionConfig} />
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Restrições <span className="text-gray-400 normal-case font-normal">(opcional)</span></label>
+                    <textarea className="input resize-none h-20" placeholder="ex: Não posso usar IPs Disney, budget de licença até R$200k…" value={fashionConfig.styleNotes} onChange={(e) => setFashionConfig((c) => ({ ...c, styleNotes: e.target.value }))} />
+                  </div>
+                </div>
+              )}
             </>
+          )}
+        </div>
+
+        {/* Debate rounds */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Debate Rounds</label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { v: 1, label: '1 Round', sub: 'Opening positions' },
+              { v: 2, label: '2 Rounds', sub: '+ Cross-examination' },
+              { v: 3, label: '3 Rounds', sub: '+ Final verdicts & scores' },
+            ].map(({ v, label, sub }) => (
+              <button key={v} onClick={() => setRounds(v)}
+                className={`p-3 rounded-xl border text-left transition-all ${rounds === v ? 'bg-brand-50 border-brand-300' : 'bg-white border-gray-200 hover:border-gray-300'}`}
+              >
+                <p className={`text-sm font-semibold ${rounds === v ? 'text-brand-700' : 'text-gray-500'}`}>{label}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Advocatus Diaboli */}
+        <div>
+          <button onClick={() => setEnableAdvocatus((v) => !v)}
+            className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${enableAdvocatus ? 'bg-gray-100 border-gray-300' : 'bg-white border-gray-200 hover:border-gray-300'}`}
+          >
+            <span className="text-xl">😈</span>
+            <div className="flex-1">
+              <p className={`text-sm font-semibold ${enableAdvocatus ? 'text-gray-800' : 'text-gray-500'}`}>Advocatus Diaboli</p>
+              <p className="text-xs text-gray-400">Adiciona um agente que sempre desafia o consenso emergente</p>
+            </div>
+            <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${enableAdvocatus ? 'bg-gray-600 border-gray-600' : 'border-gray-300'}`} />
+          </button>
+        </div>
+
+        {/* A/B Provider comparison */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            <span className="flex items-center gap-1.5"><GitCompare size={12} /> A/B Provider Comparison <span className="font-normal normal-case text-gray-400">(optional)</span></span>
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => setComparisonProvider(null)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${comparisonProvider === null ? 'bg-gray-100 text-gray-700 border-gray-300' : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300'}`}
+            >Off</button>
+            {PROVIDERS.filter((p: { id: string }) => p.id !== selectedProvider).map((p: { id: string; name: string; icon: string }) => (
+              <button key={p.id} onClick={() => setComparisonProvider(p.id as LLMProvider)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${comparisonProvider === p.id ? 'bg-blue-50 text-blue-600 border-blue-300' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+              >{p.icon} {p.name}</button>
+            ))}
+          </div>
+          {comparisonProvider && (
+            <p className="text-xs text-blue-500 mt-2 flex items-center gap-1"><Repeat size={11} />Vai criar 2 simulações em paralelo — você será redirecionado para a tela de comparação.</p>
           )}
         </div>
 
@@ -735,21 +643,34 @@ export default function NewSimulationPage() {
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Agents</label>
-            <span className="text-xs text-gray-400">{selectedAgentIds.size} selected</span>
+            <span className="text-xs text-gray-400">{selectedAgentIds.size + (enableAdvocatus ? 1 : 0)} selected</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {PERSONAS_BY_MODE[mode].map((persona) => (
+            {allModeAgents.map((persona) => (
               <AgentToggle key={persona.id} persona={persona} selected={selectedAgentIds.has(persona.id)} onToggle={() => toggleAgent(persona.id)} />
             ))}
+            {enableAdvocatus && (
+              <AgentToggle persona={ADVOCATUS_DIABOLI} selected={true} onToggle={() => setEnableAdvocatus(false)} />
+            )}
           </div>
+
+          {/* Custom agent */}
+          {!showCustomBuilder ? (
+            <button onClick={() => setShowCustomBuilder(true)} className="mt-2 flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors">
+              <Plus size={13} />Add custom agent
+            </button>
+          ) : (
+            <div className="mt-3">
+              <CustomAgentBuilder onAdd={addCustomAgent} onClose={() => setShowCustomBuilder(false)} />
+            </div>
+          )}
         </div>
 
         {/* CTA */}
-        <button onClick={handleCreate} disabled={!isValid || selectedAgentIds.size === 0}
+        <button onClick={handleCreate} disabled={!isValid || (selectedAgentIds.size + customAgents.filter((p) => selectedAgentIds.has(p.id)).length) === 0}
           className="btn-primary w-full flex items-center justify-center gap-2 py-3 text-base disabled:opacity-40"
         >
-          Launch Simulation
-          <ChevronRight size={18} />
+          {comparisonProvider ? <><GitCompare size={18} />Launch A/B Simulation</> : <><ChevronRight size={18} />Launch Simulation</>}
         </button>
       </div>
     </div>

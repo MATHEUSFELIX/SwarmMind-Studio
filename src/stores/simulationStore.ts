@@ -12,6 +12,10 @@ interface SimulationStore {
   finalizeMessage: (simId: string, agentId: string) => void
   setStatus: (simId: string, status: Simulation['status']) => void
   setMetrics: (simId: string, metrics: SimulationMetrics) => void
+  setRound: (simId: string, round: number) => void
+  injectContext: (simId: string, context: string) => void
+  forkSimulation: (simId: string) => Simulation
+  linkSimulations: (idA: string, idB: string) => void
   setActive: (id: string | null) => void
   getSimulation: (id: string) => Simulation | undefined
   deleteSimulation: (id: string) => void
@@ -29,6 +33,8 @@ export const useSimulationStore = create<SimulationStore>()(
           status: 'idle',
           messages: [],
           createdAt: Date.now(),
+          currentRound: 1,
+          injectedContexts: [],
         }
         set((s) => ({ simulations: [sim, ...s.simulations], activeId: sim.id }))
         return sim
@@ -85,6 +91,54 @@ export const useSimulationStore = create<SimulationStore>()(
           simulations: s.simulations.map((sim) =>
             sim.id === simId ? { ...sim, metrics } : sim,
           ),
+        }))
+      },
+
+      setRound: (simId, round) => {
+        set((s) => ({
+          simulations: s.simulations.map((sim) =>
+            sim.id === simId ? { ...sim, currentRound: round } : sim,
+          ),
+        }))
+      },
+
+      injectContext: (simId, context) => {
+        set((s) => ({
+          simulations: s.simulations.map((sim) =>
+            sim.id === simId
+              ? { ...sim, injectedContexts: [...sim.injectedContexts, context] }
+              : sim,
+          ),
+        }))
+      },
+
+      forkSimulation: (simId) => {
+        const original = get().simulations.find((s) => s.id === simId)
+        if (!original) throw new Error('Simulation not found')
+        const forked: Simulation = {
+          ...original,
+          id: crypto.randomUUID(),
+          name: `Fork of ${original.name}`,
+          status: 'idle',
+          messages: [],
+          metrics: undefined,
+          createdAt: Date.now(),
+          completedAt: undefined,
+          currentRound: 1,
+          injectedContexts: [],
+          linkedSimId: undefined,
+        }
+        set((s) => ({ simulations: [forked, ...s.simulations], activeId: forked.id }))
+        return forked
+      },
+
+      linkSimulations: (idA, idB) => {
+        set((s) => ({
+          simulations: s.simulations.map((sim) => {
+            if (sim.id === idA) return { ...sim, linkedSimId: idB }
+            if (sim.id === idB) return { ...sim, linkedSimId: idA }
+            return sim
+          }),
         }))
       },
 

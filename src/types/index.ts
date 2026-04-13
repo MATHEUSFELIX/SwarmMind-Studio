@@ -22,7 +22,13 @@ export interface AgentPersona {
   color: string
   bgColor: string
   emoji: string
-  sentimentBias: number // -1 (negative) to 1 (positive)
+  sentimentBias: number
+}
+
+export interface AgentScore {
+  value: number           // 1–10
+  confidence: 'low' | 'medium' | 'high'
+  keyPoint: string
 }
 
 export interface AgentMessage {
@@ -36,6 +42,8 @@ export interface AgentMessage {
   isStreaming: boolean
   timestamp: number
   sentiment: number
+  round: number           // which debate round this belongs to
+  score?: AgentScore      // extracted from final-round structured output
 }
 
 // ─── Fashion ──────────────────────────────────────────────────────────────────
@@ -95,7 +103,7 @@ export interface ResearchConfig {
   dataContext: string
 }
 
-// ─── Simulation ───────────────────────────────────────────────────────────────
+// ─── Simulation config ────────────────────────────────────────────────────────
 export interface SimulationConfig {
   id: string
   name: string
@@ -103,6 +111,9 @@ export interface SimulationConfig {
   scenario: string
   agents: AgentPersona[]
   platform?: string
+  rounds: number                    // 1 | 2 | 3
+  enableAdvocatus: boolean
+  comparisonProvider?: LLMProvider  // if set, a mirror sim runs with this provider
   fashionConfig?: FashionConfig
   consultingConfig?: ConsultingConfig
   socialConfig?: SocialConfig
@@ -116,21 +127,22 @@ export interface SimulationMetrics {
   neutralCount: number
   negativeCount: number
   keyInsights: string[]
-  // Fashion-specific
+  consensusEvolution?: number[]     // consensusLevel per round
+  // Fashion
   trendScore?: number
   sellThroughPrediction?: number
   licensingFitScore?: number
   viralityPotential?: 'Low' | 'Medium' | 'High'
   sustainabilityRisk?: 'Low' | 'Medium' | 'High'
-  // Consulting-specific
+  // Consulting
   riskLevel?: 'Low' | 'Medium' | 'High'
   implementationComplexity?: 'Low' | 'Medium' | 'High'
   decisionScore?: number
-  // Social-specific
+  // Social
   viralityScore?: number
   controversyIndex?: number
   platformFit?: 'Low' | 'Medium' | 'High'
-  // Research-specific
+  // Research
   evidenceStrength?: number
   practicalApplicability?: 'Low' | 'Medium' | 'High'
   researchGapScore?: number
@@ -142,4 +154,7 @@ export interface Simulation extends SimulationConfig {
   metrics?: SimulationMetrics
   createdAt: number
   completedAt?: number
+  currentRound: number
+  injectedContexts: string[]        // mid-sim context injections
+  linkedSimId?: string              // A/B pair reference
 }
