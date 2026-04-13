@@ -52,8 +52,8 @@ export default function SimulationPage() {
   if (!sim) {
     return (
       <div className="flex flex-col items-center justify-center h-96 gap-4">
-        <AlertTriangle className="text-slate-600" size={32} />
-        <p className="text-slate-400">Simulation not found</p>
+        <AlertTriangle className="text-gray-300" size={32} />
+        <p className="text-gray-500">Simulation not found</p>
         <Link to="/" className="btn-secondary">Back to Home</Link>
       </div>
     )
@@ -231,17 +231,17 @@ export default function SimulationPage() {
           <ArrowLeft size={16} />
         </button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-bold text-slate-100 truncate">{sim.name}</h1>
+          <h1 className="text-xl font-bold text-gray-900 truncate">{sim.name}</h1>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs text-slate-500 capitalize">{sim.mode}</span>
+            <span className="text-xs text-gray-400 capitalize">{sim.mode}</span>
             {sim.platform && (
               <>
-                <span className="text-slate-700">·</span>
-                <span className="text-xs text-slate-500">{sim.platform}</span>
+                <span className="text-gray-300">·</span>
+                <span className="text-xs text-gray-400">{sim.platform}</span>
               </>
             )}
-            <span className="text-slate-700">·</span>
-            <span className="text-xs text-slate-500">{sim.agents.length} agents</span>
+            <span className="text-gray-300">·</span>
+            <span className="text-xs text-gray-400">{sim.agents.length} agents</span>
           </div>
         </div>
 
@@ -292,24 +292,24 @@ export default function SimulationPage() {
               <div className="flex flex-col gap-2 text-xs mb-3">
                 {sim.fashionConfig.decliningItem && (
                   <div className="flex items-start gap-2">
-                    <span className="text-slate-500 flex-shrink-0">📉 Em queda:</span>
-                    <span className="text-slate-200 font-semibold">{sim.fashionConfig.decliningItem}</span>
+                    <span className="text-gray-500 flex-shrink-0">📉 Em queda:</span>
+                    <span className="text-gray-800 font-semibold">{sim.fashionConfig.decliningItem}</span>
                   </div>
                 )}
                 {sim.fashionConfig.retailer && (
-                  <div><span className="text-slate-500">Varejista:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.retailer}</span></div>
+                  <div><span className="text-gray-500">Varejista:</span> <span className="text-gray-800 font-medium ml-1">{sim.fashionConfig.retailer}</span></div>
                 )}
                 {sim.fashionConfig.targetAge && (
-                  <div><span className="text-slate-500">Público:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.targetAge} · {sim.fashionConfig.targetGender}</span></div>
+                  <div><span className="text-gray-500">Público:</span> <span className="text-gray-800 font-medium ml-1">{sim.fashionConfig.targetAge} · {sim.fashionConfig.targetGender}</span></div>
                 )}
                 {sim.fashionConfig.priceRange && (
-                  <div><span className="text-slate-500">Preço:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.priceRange}</span></div>
+                  <div><span className="text-gray-500">Preço:</span> <span className="text-gray-800 font-medium ml-1">{sim.fashionConfig.priceRange}</span></div>
                 )}
               </div>
               {sim.fashionConfig.decliningReason && (
                 <div className="border-t border-fuchsia-500/10 pt-3">
-                  <p className="text-xs text-slate-500 mb-1">Por que está caindo:</p>
-                  <p className="text-xs text-slate-400 leading-relaxed">{sim.fashionConfig.decliningReason}</p>
+                  <p className="text-xs text-gray-500 mb-1">Por que está caindo:</p>
+                  <p className="text-xs text-gray-500 leading-relaxed">{sim.fashionConfig.decliningReason}</p>
                 </div>
               )}
             </>
@@ -318,26 +318,26 @@ export default function SimulationPage() {
               <p className="text-xs font-semibold text-fuchsia-400 uppercase tracking-wider mb-3">🧵 Fashion Brief</p>
               <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs mb-3">
                 {sim.fashionConfig.collectionType === 'licensed' && sim.fashionConfig.licensedBrand && (
-                  <div><span className="text-slate-500">Licenciado:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.licensedBrand}</span></div>
+                  <div><span className="text-gray-500">Licenciado:</span> <span className="text-gray-800 font-medium ml-1">{sim.fashionConfig.licensedBrand}</span></div>
                 )}
                 {sim.fashionConfig.collectionName && (
-                  <div><span className="text-slate-500">Coleção:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.collectionName}</span></div>
+                  <div><span className="text-gray-500">Coleção:</span> <span className="text-gray-800 font-medium ml-1">{sim.fashionConfig.collectionName}</span></div>
                 )}
                 {sim.fashionConfig.retailer && (
-                  <div><span className="text-slate-500">Varejista:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.retailer}</span></div>
+                  <div><span className="text-gray-500">Varejista:</span> <span className="text-gray-800 font-medium ml-1">{sim.fashionConfig.retailer}</span></div>
                 )}
                 {sim.fashionConfig.season && (
-                  <div><span className="text-slate-500">Estação:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.season}</span></div>
+                  <div><span className="text-gray-500">Estação:</span> <span className="text-gray-800 font-medium ml-1">{sim.fashionConfig.season}</span></div>
                 )}
                 {sim.fashionConfig.targetAge && (
-                  <div><span className="text-slate-500">Público:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.targetAge} · {sim.fashionConfig.targetGender}</span></div>
+                  <div><span className="text-gray-500">Público:</span> <span className="text-gray-800 font-medium ml-1">{sim.fashionConfig.targetAge} · {sim.fashionConfig.targetGender}</span></div>
                 )}
                 {sim.fashionConfig.priceRange && (
-                  <div><span className="text-slate-500">Preço:</span> <span className="text-slate-200 font-medium ml-1">{sim.fashionConfig.priceRange}</span></div>
+                  <div><span className="text-gray-500">Preço:</span> <span className="text-gray-800 font-medium ml-1">{sim.fashionConfig.priceRange}</span></div>
                 )}
               </div>
               {sim.fashionConfig.styleNotes && (
-                <p className="text-xs text-slate-400 leading-relaxed border-t border-fuchsia-500/10 pt-3">
+                <p className="text-xs text-gray-500 leading-relaxed border-t border-fuchsia-500/10 pt-3">
                   {sim.fashionConfig.styleNotes}
                 </p>
               )}
@@ -346,8 +346,8 @@ export default function SimulationPage() {
         </div>
       ) : (
         <div className="card p-4 mb-6">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Scenario</p>
-          <p className="text-sm text-slate-300 leading-relaxed">{sim.scenario}</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Scenario</p>
+          <p className="text-sm text-gray-600 leading-relaxed">{sim.scenario}</p>
         </div>
       )}
 
@@ -357,7 +357,7 @@ export default function SimulationPage() {
           <AlertTriangle size={16} className="text-red-400 mt-0.5 flex-shrink-0" />
           <div>
             <p className="text-sm font-medium text-red-400">Simulation Error</p>
-            <p className="text-xs text-slate-400 mt-1 font-mono">{error}</p>
+            <p className="text-xs text-gray-500 mt-1 font-mono">{error}</p>
           </div>
         </div>
       )}
@@ -369,8 +369,8 @@ export default function SimulationPage() {
             onClick={() => setTab('debate')}
             className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${
               tab === 'debate'
-                ? 'bg-slate-800 text-slate-100'
-                : 'text-slate-500 hover:text-slate-300'
+                ? 'bg-gray-100 text-gray-900'
+                : 'text-gray-400 hover:text-gray-700'
             }`}
           >
             Debate ({sim.messages.length})
@@ -379,8 +379,8 @@ export default function SimulationPage() {
             onClick={() => setTab('metrics')}
             className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-1 ${
               tab === 'metrics'
-                ? 'bg-slate-800 text-slate-100'
-                : 'text-slate-500 hover:text-slate-300'
+                ? 'bg-gray-100 text-gray-900'
+                : 'text-gray-400 hover:text-gray-700'
             }`}
           >
             <BarChart2 size={12} />
@@ -394,9 +394,9 @@ export default function SimulationPage() {
         <div className="flex flex-col gap-4">
           {sim.messages.length === 0 && sim.status === 'idle' && (
             <div className="card p-12 flex flex-col items-center justify-center text-center">
-              <Play size={28} className="text-slate-700 mb-3" />
-              <p className="text-slate-400 font-medium">Ready to launch</p>
-              <p className="text-slate-600 text-sm mt-1">Click Start to begin the agent debate</p>
+              <Play size={28} className="text-gray-300 mb-3" />
+              <p className="text-gray-500 font-medium">Ready to launch</p>
+              <p className="text-gray-400 text-sm mt-1">Click Start to begin the agent debate</p>
             </div>
           )}
 
@@ -421,12 +421,12 @@ export default function SimulationPage() {
               <div className="grid grid-cols-2 gap-3">
                 {sim.metrics.trendScore !== undefined && (
                   <div className="card p-3">
-                    <p className="text-xs text-slate-500 mb-1">Trend Score</p>
+                    <p className="text-xs text-gray-500 mb-1">Trend Score</p>
                     <div className="flex items-end gap-2">
                       <span className="text-2xl font-bold text-fuchsia-400">{sim.metrics.trendScore}</span>
-                      <span className="text-xs text-slate-500 mb-1">/100</span>
+                      <span className="text-xs text-gray-400 mb-1">/100</span>
                     </div>
-                    <div className="h-1.5 bg-slate-800 rounded-full mt-2 overflow-hidden">
+                    <div className="h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
                       <div
                         className="h-full bg-fuchsia-500 rounded-full"
                         style={{ width: `${sim.metrics.trendScore}%` }}
@@ -436,11 +436,11 @@ export default function SimulationPage() {
                 )}
                 {sim.metrics.sellThroughPrediction !== undefined && (
                   <div className="card p-3">
-                    <p className="text-xs text-slate-500 mb-1">Sell-Through Est.</p>
+                    <p className="text-xs text-gray-500 mb-1">Sell-Through Est.</p>
                     <div className="flex items-end gap-2">
                       <span className="text-2xl font-bold text-emerald-400">~{sim.metrics.sellThroughPrediction}%</span>
                     </div>
-                    <div className="h-1.5 bg-slate-800 rounded-full mt-2 overflow-hidden">
+                    <div className="h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
                       <div
                         className="h-full bg-emerald-500 rounded-full"
                         style={{ width: `${sim.metrics.sellThroughPrediction}%` }}
@@ -450,12 +450,12 @@ export default function SimulationPage() {
                 )}
                 {sim.metrics.licensingFitScore !== undefined && (
                   <div className="card p-3">
-                    <p className="text-xs text-slate-500 mb-1">Licensing Fit</p>
+                    <p className="text-xs text-gray-500 mb-1">Licensing Fit</p>
                     <div className="flex items-end gap-2">
                       <span className="text-2xl font-bold text-violet-400">{sim.metrics.licensingFitScore}</span>
-                      <span className="text-xs text-slate-500 mb-1">/100</span>
+                      <span className="text-xs text-gray-400 mb-1">/100</span>
                     </div>
-                    <div className="h-1.5 bg-slate-800 rounded-full mt-2 overflow-hidden">
+                    <div className="h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
                       <div
                         className="h-full bg-violet-500 rounded-full"
                         style={{ width: `${sim.metrics.licensingFitScore}%` }}
@@ -466,17 +466,17 @@ export default function SimulationPage() {
                 <div className="card p-3 flex flex-col gap-2">
                   {sim.metrics.viralityPotential && (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-500">Virality</span>
+                      <span className="text-xs text-gray-500">Virality</span>
                       <span className={`text-xs font-bold ${
                         sim.metrics.viralityPotential === 'High' ? 'text-rose-400'
                         : sim.metrics.viralityPotential === 'Medium' ? 'text-amber-400'
-                        : 'text-slate-500'
+                        : 'text-gray-400'
                       }`}>{sim.metrics.viralityPotential}</span>
                     </div>
                   )}
                   {sim.metrics.sustainabilityRisk && (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-500">ESG Risk</span>
+                      <span className="text-xs text-gray-500">ESG Risk</span>
                       <span className={`text-xs font-bold ${
                         sim.metrics.sustainabilityRisk === 'High' ? 'text-red-400'
                         : sim.metrics.sustainabilityRisk === 'Medium' ? 'text-amber-400'
@@ -523,12 +523,12 @@ export default function SimulationPage() {
           <SentimentChart messages={sim.messages} />
 
           <div className="card p-4">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
               Key Insights
             </p>
             <ul className="flex flex-col gap-2">
               {sim.metrics.keyInsights.map((insight, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
+                <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
                   <span className="text-brand-400 mt-0.5 flex-shrink-0">→</span>
                   {insight}
                 </li>
@@ -538,7 +538,7 @@ export default function SimulationPage() {
 
           {/* Agent breakdown */}
           <div className="card p-4">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
               Agent Breakdown
             </p>
             <div className="flex flex-col gap-2">
@@ -548,7 +548,7 @@ export default function SimulationPage() {
                   <span className={`text-xs font-medium w-28 flex-shrink-0 ${msg.agentColor}`}>
                     {msg.agentName.replace('The ', '')}
                   </span>
-                  <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
                         msg.sentiment > 0.15
@@ -563,7 +563,7 @@ export default function SimulationPage() {
                       }}
                     />
                   </div>
-                  <span className="text-xs text-slate-500 w-12 text-right">
+                  <span className="text-xs text-gray-400 w-12 text-right">
                     {msg.sentiment > 0 ? '+' : ''}{msg.sentiment.toFixed(2)}
                   </span>
                 </div>
@@ -575,8 +575,8 @@ export default function SimulationPage() {
 
       {tab === 'metrics' && !sim.metrics && (
         <div className="card p-12 flex flex-col items-center justify-center text-center">
-          <BarChart2 size={28} className="text-slate-700 mb-3" />
-          <p className="text-slate-400 font-medium">Metrics available after completion</p>
+          <BarChart2 size={28} className="text-gray-300 mb-3" />
+          <p className="text-gray-500 font-medium">Metrics available after completion</p>
         </div>
       )}
     </div>

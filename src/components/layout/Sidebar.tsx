@@ -14,20 +14,20 @@ export default function Sidebar() {
   const provider = getProvider(selectedProvider)
 
   return (
-    <aside className="hidden md:flex flex-col w-64 min-h-screen bg-slate-900 border-r border-slate-800 p-4">
+    <aside className="hidden md:flex flex-col w-60 min-h-screen bg-white border-r border-gray-200 p-4">
       {/* Logo */}
       <div className="flex items-center gap-2.5 mb-8 px-2">
-        <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center">
-          <Zap size={16} className="text-slate-950" />
+        <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center shadow-sm">
+          <Zap size={16} className="text-white" />
         </div>
         <div>
-          <p className="font-bold text-slate-100 text-sm leading-tight">SwarmMind</p>
-          <p className="text-xs text-slate-500">Studio v1</p>
+          <p className="font-bold text-gray-900 text-sm leading-tight">SwarmMind</p>
+          <p className="text-xs text-gray-400">Studio v1</p>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-1">
+      <nav className="flex flex-col gap-0.5">
         {NAV.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
@@ -36,8 +36,8 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                 isActive
-                  ? 'bg-brand-500/15 text-brand-400 border border-brand-500/20'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  ? 'bg-brand-50 text-brand-600 border border-brand-200'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`
             }
           >
@@ -48,13 +48,13 @@ export default function Sidebar() {
       </nav>
 
       {/* Divider */}
-      <div className="my-4 border-t border-slate-800" />
+      <div className="my-4 border-t border-gray-100" />
 
       {/* Mode quick links */}
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-2">
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">
         Modes
       </p>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-0.5">
         {[
           { label: 'Consulting', icon: Brain, mode: 'consulting' },
           { label: 'Social', icon: Users, mode: 'social' },
@@ -64,7 +64,7 @@ export default function Sidebar() {
           <NavLink
             key={mode}
             to={`/new?mode=${mode}`}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all duration-150"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all duration-150"
           >
             <Icon size={14} />
             {label}
@@ -76,12 +76,12 @@ export default function Sidebar() {
       <div className="flex-1" />
 
       {/* LLM Selector */}
-      <div className="border-t border-slate-800 pt-4">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1 mb-2">
+      <div className="border-t border-gray-100 pt-4">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1 mb-2">
           AI Provider
         </p>
         <LLMSelector />
-        <p className="text-xs text-slate-600 px-1 mt-1.5">{provider.model}</p>
+        <p className="text-xs text-gray-400 px-1 mt-1.5 font-mono truncate">{provider.model}</p>
       </div>
     </aside>
   )

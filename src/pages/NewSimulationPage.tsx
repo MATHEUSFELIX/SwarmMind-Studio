@@ -14,10 +14,10 @@ const MODES: {
   color: string
   bg: string
 }[] = [
-  { id: 'consulting', label: 'Consulting', desc: 'Strategic analysis with business personas', icon: Brain, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
-  { id: 'social', label: 'Social', desc: 'Public opinion & sentiment simulation', icon: Users, color: 'text-pink-400', bg: 'bg-pink-500/10 border-pink-500/20' },
-  { id: 'research', label: 'Research', desc: 'Insight synthesis & pattern analysis', icon: BookOpen, color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20' },
-  { id: 'fashion', label: 'Fashion', desc: 'Collection & licensing retail intelligence', icon: Shirt, color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10 border-fuchsia-500/20' },
+  { id: 'consulting', label: 'Consulting', desc: 'Strategic analysis with business personas', icon: Brain, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' },
+  { id: 'social', label: 'Social', desc: 'Public opinion & sentiment simulation', icon: Users, color: 'text-pink-600', bg: 'bg-pink-50 border-pink-200' },
+  { id: 'research', label: 'Research', desc: 'Insight synthesis & pattern analysis', icon: BookOpen, color: 'text-purple-600', bg: 'bg-purple-50 border-purple-200' },
+  { id: 'fashion', label: 'Fashion', desc: 'Collection & licensing retail intelligence', icon: Shirt, color: 'text-fuchsia-600', bg: 'bg-fuchsia-50 border-fuchsia-200' },
 ]
 
 const SOCIAL_PLATFORMS = ['Twitter/X', 'Reddit', 'LinkedIn', 'TikTok', 'Facebook']
@@ -46,17 +46,17 @@ function AgentToggle({ persona, selected, onToggle }: { persona: AgentPersona; s
     <button
       onClick={onToggle}
       className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all duration-150 ${
-        selected ? `${persona.bgColor} opacity-100` : 'bg-slate-900 border-slate-800 opacity-60 hover:opacity-80'
+        selected ? 'bg-white border-gray-300 shadow-sm opacity-100' : 'bg-gray-50 border-gray-200 opacity-60 hover:opacity-90'
       }`}
     >
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-base border ${persona.bgColor}`}>
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-base border ${selected ? 'bg-white border-gray-200' : 'bg-gray-100 border-gray-200'}`}>
         {persona.emoji}
       </div>
       <div className="flex-1 min-w-0">
-        <p className={`text-xs font-semibold ${selected ? persona.color : 'text-slate-400'}`}>{persona.name}</p>
-        <p className="text-xs text-slate-500 truncate">{persona.role}</p>
+        <p className={`text-xs font-semibold ${selected ? 'text-gray-800' : 'text-gray-400'}`}>{persona.name}</p>
+        <p className="text-xs text-gray-400 truncate">{persona.role}</p>
       </div>
-      <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all ${selected ? 'bg-brand-500 border-brand-500' : 'border-slate-700'}`} />
+      <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all ${selected ? 'bg-brand-500 border-brand-500' : 'border-gray-300'}`} />
     </button>
   )
 }
@@ -71,13 +71,13 @@ function SharedFields({ config, onChange }: { config: FashionConfig; onChange: (
     <>
       {/* Retailer */}
       <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
           Varejista alvo <span className="text-red-400">*</span>
         </label>
         <div className="flex flex-wrap gap-2">
           {RETAILERS.map((r) => (
             <button key={r} onClick={() => set('retailer', r)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${config.retailer === r ? 'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/30' : 'bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-700'}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${config.retailer === r ? 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-300' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
             >{r}</button>
           ))}
         </div>
@@ -86,7 +86,7 @@ function SharedFields({ config, onChange }: { config: FashionConfig; onChange: (
       {/* Age + Gender */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
             Público — Idade
           </label>
           <input
@@ -97,13 +97,13 @@ function SharedFields({ config, onChange }: { config: FashionConfig; onChange: (
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
             Público — Gênero
           </label>
           <div className="flex flex-wrap gap-1.5">
             {TARGET_GENDERS.map((g) => (
               <button key={g} onClick={() => set('targetGender', g)}
-                className={`px-2.5 py-1 rounded-lg text-xs border transition-all ${config.targetGender === g ? 'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/30' : 'bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-700'}`}
+                className={`px-2.5 py-1 rounded-lg text-xs border transition-all ${config.targetGender === g ? 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-300' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
               >{g}</button>
             ))}
           </div>
@@ -112,11 +112,11 @@ function SharedFields({ config, onChange }: { config: FashionConfig; onChange: (
 
       {/* Season */}
       <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Estação / Entrega</label>
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Estação / Entrega</label>
         <div className="flex flex-wrap gap-2">
           {SEASONS.map((s) => (
             <button key={s} onClick={() => set('season', s)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${config.season === s ? 'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/30' : 'bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-700'}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${config.season === s ? 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-300' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
             >{s}</button>
           ))}
         </div>
@@ -124,11 +124,11 @@ function SharedFields({ config, onChange }: { config: FashionConfig; onChange: (
 
       {/* Price */}
       <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Faixa de preço</label>
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Faixa de preço</label>
         <div className="flex flex-wrap gap-2">
           {PRICE_RANGES.map((p) => (
             <button key={p} onClick={() => set('priceRange', p)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${config.priceRange === p ? 'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/30' : 'bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-700'}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${config.priceRange === p ? 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-300' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
             >{p}</button>
           ))}
         </div>
@@ -147,11 +147,11 @@ function EvaluateForm({ config, onChange }: { config: FashionConfig; onChange: (
     <div className="flex flex-col gap-5">
       {/* Collection type */}
       <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Tipo de coleção</label>
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Tipo de coleção</label>
         <div className="grid grid-cols-2 gap-2">
           {(['own', 'licensed'] as const).map((t) => (
             <button key={t} onClick={() => set('collectionType', t)}
-              className={`py-2.5 rounded-xl text-sm font-medium border transition-all ${config.collectionType === t ? 'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/30' : 'bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-700'}`}
+              className={`py-2.5 rounded-xl text-sm font-medium border transition-all ${config.collectionType === t ? 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-300' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
             >{t === 'own' ? '🏷️ Coleção Própria' : '🤝 Licenciado'}</button>
           ))}
         </div>
@@ -159,7 +159,7 @@ function EvaluateForm({ config, onChange }: { config: FashionConfig; onChange: (
 
       {/* Name */}
       <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
           {config.collectionType === 'licensed' ? 'Nome do Licenciado' : 'Nome da Coleção'}
           <span className="text-red-400 ml-1">*</span>
         </label>
@@ -172,7 +172,7 @@ function EvaluateForm({ config, onChange }: { config: FashionConfig; onChange: (
 
       {config.collectionType === 'licensed' && (
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Nome da Linha / Coleção</label>
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Nome da Linha / Coleção</label>
           <input className="input" placeholder="ex: Coleção NASA × Renner Outono 2026"
             value={config.collectionName}
             onChange={(e) => set('collectionName', e.target.value)}
@@ -184,7 +184,7 @@ function EvaluateForm({ config, onChange }: { config: FashionConfig; onChange: (
 
       {/* Style notes */}
       <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
           Referências de estilo, paleta, silhuetas & contexto <span className="text-red-400">*</span>
         </label>
         <textarea className="input resize-none h-32"
@@ -211,7 +211,7 @@ function DiscoveryForm({ config, onChange }: { config: FashionConfig; onChange: 
     <div className="flex flex-col gap-5">
       {/* What's declining */}
       <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
           {isLicense ? 'Qual licenciado está parando de vender?' : 'Qual coleção / linha está caindo?'}
           <span className="text-red-400 ml-1">*</span>
         </label>
@@ -224,8 +224,8 @@ function DiscoveryForm({ config, onChange }: { config: FashionConfig; onChange: 
 
       {/* Why declining */}
       <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-          Por que está caindo? <span className="text-slate-600 normal-case font-normal">(opcional)</span>
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+          Por que está caindo? <span className="text-gray-400 normal-case font-normal">(opcional)</span>
         </label>
         <textarea className="input resize-none h-24"
           placeholder={isLicense
@@ -240,8 +240,8 @@ function DiscoveryForm({ config, onChange }: { config: FashionConfig; onChange: 
 
       {/* Additional constraints */}
       <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-          Restrições ou requisitos <span className="text-slate-600 normal-case font-normal">(opcional)</span>
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+          Restrições ou requisitos <span className="text-gray-400 normal-case font-normal">(opcional)</span>
         </label>
         <textarea className="input resize-none h-20"
           placeholder={isLicense
@@ -387,30 +387,30 @@ export default function NewSimulationPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-100">New Simulation</h1>
-        <p className="text-slate-500 text-sm mt-1">Configure your multi-agent swarm</p>
+        <h1 className="text-2xl font-bold text-gray-900">New Simulation</h1>
+        <p className="text-gray-400 text-sm mt-1">Configure your multi-agent swarm</p>
       </div>
 
       <div className="flex flex-col gap-6">
         {/* Name */}
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-            Simulation Name <span className="text-slate-600 normal-case font-normal">(optional)</span>
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            Simulation Name <span className="text-gray-400 normal-case font-normal">(optional)</span>
           </label>
           <input className="input" placeholder="e.g., Sonic Replacement Strategy — Renner" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
 
         {/* Mode selector */}
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Mode</label>
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Mode</label>
           <div className="grid grid-cols-2 gap-3">
             {MODES.map(({ id, label, desc, icon: Icon, color, bg }) => (
               <button key={id} onClick={() => setMode(id)}
-                className={`p-3 rounded-xl border text-left transition-all duration-150 ${mode === id ? bg : 'bg-slate-900 border-slate-800 hover:border-slate-700'}`}
+                className={`p-3 rounded-xl border text-left transition-all duration-150 ${mode === id ? bg : 'bg-white border-gray-200 hover:border-gray-300'}`}
               >
-                <Icon size={18} className={mode === id ? color : 'text-slate-600'} />
-                <p className={`text-sm font-semibold mt-1.5 ${mode === id ? color : 'text-slate-400'}`}>{label}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
+                <Icon size={18} className={mode === id ? color : 'text-gray-400'} />
+                <p className={`text-sm font-semibold mt-1.5 ${mode === id ? color : 'text-gray-500'}`}>{label}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
               </button>
             ))}
           </div>
@@ -419,11 +419,11 @@ export default function NewSimulationPage() {
         {/* Social: platform */}
         {mode === 'social' && (
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Platform</label>
+            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Platform</label>
             <div className="flex flex-wrap gap-2">
               {SOCIAL_PLATFORMS.map((p) => (
                 <button key={p} onClick={() => setPlatform(p)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${platform === p ? 'bg-pink-500/15 text-pink-400 border-pink-500/30' : 'bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-700'}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${platform === p ? 'bg-pink-50 text-pink-600 border-pink-300' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
                 >{p}</button>
               ))}
             </div>
@@ -439,16 +439,16 @@ export default function NewSimulationPage() {
             <div className="flex flex-col gap-2 mb-6">
               {FASHION_GOALS.map(({ id, icon: Icon, label, desc }) => (
                 <button key={id} onClick={() => setFashionConfig((c) => ({ ...c, goal: id }))}
-                  className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${fashionConfig.goal === id ? 'bg-fuchsia-500/20 border-fuchsia-500/40' : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'}`}
+                  className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${fashionConfig.goal === id ? 'bg-fuchsia-50 border-fuchsia-300' : 'bg-white border-gray-200 hover:border-gray-300'}`}
                 >
-                  <div className={`p-1.5 rounded-lg mt-0.5 flex-shrink-0 ${fashionConfig.goal === id ? 'bg-fuchsia-500/20' : 'bg-slate-800'}`}>
-                    <Icon size={14} className={fashionConfig.goal === id ? 'text-fuchsia-400' : 'text-slate-500'} />
+                  <div className={`p-1.5 rounded-lg mt-0.5 flex-shrink-0 ${fashionConfig.goal === id ? 'bg-fuchsia-50' : 'bg-gray-100'}`}>
+                    <Icon size={14} className={fashionConfig.goal === id ? 'text-fuchsia-600' : 'text-gray-400'} />
                   </div>
                   <div>
-                    <p className={`text-sm font-semibold ${fashionConfig.goal === id ? 'text-fuchsia-300' : 'text-slate-400'}`}>{label}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
+                    <p className={`text-sm font-semibold ${fashionConfig.goal === id ? 'text-fuchsia-700' : 'text-gray-500'}`}>{label}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
                   </div>
-                  <div className={`ml-auto mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 ${fashionConfig.goal === id ? 'bg-fuchsia-500 border-fuchsia-500' : 'border-slate-700'}`} />
+                  <div className={`ml-auto mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 ${fashionConfig.goal === id ? 'bg-fuchsia-500 border-fuchsia-500' : 'border-gray-300'}`} />
                 </button>
               ))}
             </div>
@@ -461,21 +461,21 @@ export default function NewSimulationPage() {
           </div>
         ) : (
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Scenario / Document</label>
+            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Scenario / Document</label>
             <textarea className="input resize-none h-36"
               placeholder="Describe the situation, paste a document, or outline the context…"
               value={scenario}
               onChange={(e) => setScenario(e.target.value)}
             />
-            <p className="text-xs text-slate-600 mt-1">{scenario.length} characters</p>
+            <p className="text-xs text-gray-400 mt-1">{scenario.length} characters</p>
           </div>
         )}
 
         {/* Agents */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Agents</label>
-            <span className="text-xs text-slate-600">{selectedAgentIds.size} selected</span>
+            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Agents</label>
+            <span className="text-xs text-gray-400">{selectedAgentIds.size} selected</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {PERSONAS_BY_MODE[mode].map((persona) => (
